@@ -131,57 +131,55 @@ export default function Dashboard() {
   ]
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      {/* Mobile-Optimized Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-4 text-white">
-        <div className="flex flex-col space-y-3">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-xl font-bold">
-                {isAuthenticated ? `Welcome, ${(user as any)?.name || 'User'}!` : 'EasyApply Jobs'}
-              </h1>
-              <p className="text-blue-100 text-sm mt-1">
-                {filteredJobs.length} government jobs available
-              </p>
-            </div>
-            {!isAuthenticated && (
-              <div className="flex space-x-2">
-                <Link
-                  to="/signin"
-                  className="bg-white text-blue-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="bg-blue-800 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-900 transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+    <div className="space-y-3">
+      {/* Compact Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-3 text-white">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-lg font-bold">
+              {isAuthenticated ? `Welcome, ${(user as any)?.name || 'User'}!` : 'EasyApply Jobs'}
+            </h1>
+            <p className="text-blue-100 text-xs">
+              {filteredJobs.length} government jobs available
+            </p>
           </div>
+          {!isAuthenticated && (
+            <div className="flex space-x-1.5">
+              <Link
+                to="/signin"
+                className="bg-white text-blue-600 px-2 py-1 rounded text-xs font-medium hover:bg-blue-50 transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                className="bg-blue-800 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-900 transition-colors"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Mobile-Optimized Search & Filters */}
-      <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 space-y-3">
+      {/* Compact Search & Filters */}
+      <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 space-y-2">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
           <input
             type="text"
             placeholder="Search government jobs..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-7 pr-3 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
         {/* Filters Row */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
           <select 
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-gray-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             value={selectedFilters.location}
             onChange={(e) => setSelectedFilters({...selectedFilters, location: e.target.value})}
           >
@@ -192,7 +190,7 @@ export default function Dashboard() {
             <option value="pan-india">Pan India</option>
           </select>
           <select 
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-gray-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             value={selectedFilters.department}
             onChange={(e) => setSelectedFilters({...selectedFilters, department: e.target.value})}
           >
@@ -203,10 +201,10 @@ export default function Dashboard() {
           </select>
         </div>
         
-        {/* Category Pills - Mobile Optimized */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Categories:</h4>
-          <div className="flex flex-wrap gap-2">
+        {/* Category Pills - Compact */}
+        <div>
+          <p className="text-xs text-gray-600 mb-1.5">Categories:</p>
+          <div className="flex flex-wrap gap-1.5">
             {jobCategories.map((category) => (
               <button
                 key={category.id}
@@ -214,31 +212,31 @@ export default function Dashboard() {
                   setSelectedCategory(selectedCategory === category.id ? null : category.id)
                   setSearchTerm('')
                 }}
-                className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium transition-all ${
                   selectedCategory === category.id 
-                    ? 'bg-blue-600 text-white shadow-md' 
+                    ? 'bg-blue-600 text-white' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <span className="text-base">{category.icon}</span>
+                <span className="text-sm">{category.icon}</span>
                 <span>{category.name}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                <span className={`text-xs px-1 py-0.5 rounded-full ${
                   selectedCategory === category.id 
                     ? 'bg-blue-500 text-white' 
                     : 'bg-gray-200 text-gray-600'
                 }`}>{category.jobCount}</span>
               </button>
             ))}
+            {selectedCategory && (
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="inline-flex items-center space-x-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium hover:bg-red-200 transition-colors"
+              >
+                <span>Clear</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
-          {selectedCategory && (
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className="inline-flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium hover:bg-red-200 transition-colors"
-            >
-              <span>Clear Filter</span>
-              <X className="h-4 w-4" />
-            </button>
-          )}
         </div>
       </div>
 
@@ -281,9 +279,9 @@ export default function Dashboard() {
             <p className="text-gray-600">Discovering government jobs using AI...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filteredJobs.length === 0 ? (
-              <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+              <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
                 <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">No jobs found. Try adjusting your filters or search terms.</p>
               </div>
@@ -293,57 +291,57 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     {/* Job Title & Organization */}
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-2 line-clamp-2 leading-tight">{job.title}</h3>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Building2 className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-600 text-sm truncate">{job.organization || job.company}</span>
+                      <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2 leading-tight">{job.title}</h3>
+                      <div className="flex items-center space-x-1 mb-2">
+                        <Building2 className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-600 text-xs truncate">{job.organization || job.company}</span>
                       </div>
-                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                      <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
                         {job.job_type || 'Government'}
                       </span>
                     </div>
                     
                     {/* Key Information Grid */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center space-x-1 text-gray-600">
+                        <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
                         <span className="truncate">{job.location}</span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-red-400 flex-shrink-0" />
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-3 w-3 text-red-400 flex-shrink-0" />
                         <span className="text-red-600 font-medium truncate">
                           {job.last_date || 'Check notification'}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <Users className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <div className="flex items-center space-x-1 text-gray-600">
+                        <Users className="h-3 w-3 text-gray-400 flex-shrink-0" />
                         <span className="truncate">Vacancies: {(job as any).vacancies || 'Multiple'}</span>
                       </div>
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <TrendingUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <div className="flex items-center space-x-1 text-gray-600">
+                        <TrendingUp className="h-3 w-3 text-gray-400 flex-shrink-0" />
                         <span className="truncate">Fee: {(job as any).application_fee || 'As per category'}</span>
                       </div>
                     </div>
                     
                     {/* Action Buttons */}
-                    <div className="flex space-x-2 pt-3">
+                    <div className="flex space-x-1.5 pt-2">
                       <button
                         onClick={() => {
                           setSelectedJob(job)
                           setShowJobDetails(true)
                         }}
-                        className="flex-1 bg-blue-50 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
+                        className="flex-1 bg-blue-50 text-blue-600 px-2 py-1.5 rounded text-xs font-medium hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3 w-3" />
                         <span>Details</span>
                       </button>
                       <a
                         href={job.apply_url || job.career_url || '#'}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-1"
+                        className="flex-1 bg-green-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-1"
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-3 w-3" />
                         <span>Apply</span>
                       </a>
                     </div>
