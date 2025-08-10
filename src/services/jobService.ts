@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { Job } from '../types/job'
 
-const API_BASE_URL = 'http://localhost:8000/api/v1'
+const API_BASE_URL = 'https://easy-apply-backend-production.up.railway.app/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,7 +13,14 @@ const api = axios.create({
 export const jobService = {
   async getAllJobs(): Promise<Job[]> {
     const response = await api.get('/jobs/')
-    return response.data
+    
+    // Handle the new response format: { status: "success", count: number, data: Job[] }
+    if (response.data && response.data.status === 'success') {
+      return response.data.data || []
+    }
+    
+    // Fallback for direct array response (backward compatibility)
+    return Array.isArray(response.data) ? response.data : []
   },
 
   async getJobById(id: number): Promise<Job> {
@@ -45,8 +52,16 @@ export const jobService = {
     if (filters?.organization) params.append('organization', filters.organization)
     if (filters?.department) params.append('department', filters.department)
     
-    const response = await api.get(`/jobs/government?${params.toString()}`)
-    return response.data
+    // Updated to use the new jobs endpoint that returns consistent JSON format
+    const response = await api.get(`/jobs/?${params.toString()}`)
+    
+    // Handle the new response format: { status: "success", count: number, data: Job[] }
+    if (response.data && response.data.status === 'success') {
+      return response.data.data || []
+    }
+    
+    // Fallback for direct array response (backward compatibility)
+    return Array.isArray(response.data) ? response.data : []
   },
 
   async discoverJobs(): Promise<any> {

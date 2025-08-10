@@ -1,9 +1,10 @@
 import { ReactNode, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Building2, User, Home, FileText, Settings, 
-  Menu, X, Bell, Search, Zap, Folder, ChevronDown 
+  Menu, X, Bell, Search, Zap, Folder, ChevronDown, LogIn, UserPlus 
 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 interface LayoutProps {
   children: ReactNode
@@ -11,6 +12,8 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, isAuthenticated, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
 
@@ -86,43 +89,80 @@ export default function Layout({ children }: LayoutProps) {
                 <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
               </button>
 
-              {/* Profile Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
-                  </div>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
+              {/* Authentication / Profile Area */}
+              {isAuthenticated ? (
+                /* Profile Dropdown for authenticated users */
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="hidden md:block text-sm font-medium">{user?.name || 'User'}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
 
-                {isProfileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <Link
-                      to="/profile"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      <User className="h-4 w-4 mr-3" />
-                      Profile
-                    </Link>
-                    <Link
-                      to="/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      <Settings className="h-4 w-4 mr-3" />
-                      Settings
-                    </Link>
-                    <hr className="my-1" />
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
+                  {isProfileDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      <Link
+                        to="/profile"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <User className="h-4 w-4 mr-3" />
+                        Profile
+                      </Link>
+                      <Link
+                        to="/documents"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <FileText className="h-4 w-4 mr-3" />
+                        Documents
+                      </Link>
+                      <Link
+                        to="/applications"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <Folder className="h-4 w-4 mr-3" />
+                        Applications
+                      </Link>
+                      <hr className="my-1" />
+                      <button 
+                        onClick={() => {
+                          logout()
+                          setIsProfileDropdownOpen(false)
+                          navigate('/')
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Sign Up / Sign In buttons for unauthenticated users */
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => navigate('/signin')}
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    <span>Sign In</span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/signup')}
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span>Sign Up</span>
+                  </button>
+                </div>
+              )}
 
               {/* Mobile menu button */}
               <button
