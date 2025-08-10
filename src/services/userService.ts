@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { User } from '../types/user'
 
-const API_BASE_URL = 'https://easy-apply-backend-production.up.railway.app'
+const API_BASE_URL = 'https://easy-apply-backend-production.up.railway.app/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
