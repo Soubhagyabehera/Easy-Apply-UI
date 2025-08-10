@@ -117,11 +117,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="px-4 sm:px-0">
+    <div className="px-3 sm:px-4 lg:px-0">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-        <p className="mt-2 text-gray-600">
+      <div className="mb-4 sm:mb-6 lg:mb-8">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">My Profile</h1>
+        <p className="mt-1 sm:mt-2 text-gray-600 text-sm sm:text-base">
           Manage your professional information and job preferences
         </p>
       </div>
@@ -132,39 +132,39 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {/* Profile Card */}
         <div className="lg:col-span-2">
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
             {!isEditing ? (
               <>
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 sm:mb-6 space-y-4 sm:space-y-0">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
                     {user.picture ? (
                       <img
                         src={user.picture}
                         alt={user.name}
-                        className="w-16 h-16 rounded-full object-cover"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-8 w-8 text-blue-600" />
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                       </div>
                     )}
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
-                      <p className="text-gray-600">{user.email}</p>
-                      <p className="text-sm text-gray-500">
+                    <div className="min-w-0">
+                      <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words">{user.name}</h2>
+                      <p className="text-gray-600 text-sm sm:text-base break-all">{user.email}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">
                         Member since {new Date(user.created_at || '').toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base w-full sm:w-auto"
                   >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
+                    <Edit className="h-4 w-4" />
+                    <span>Edit Profile</span>
                   </button>
                 </div>
 

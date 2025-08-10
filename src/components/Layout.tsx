@@ -44,7 +44,7 @@ export default function Layout({ children }: LayoutProps) {
                   <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div className="hidden xs:block">
-                  <span className="text-lg sm:text-xl font-bold text-gray-900">GovJobs</span>
+                  <span className="text-lg sm:text-xl font-bold text-gray-900">Applyze</span>
                   <span className="text-xs text-gray-500 block">Portal</span>
                 </div>
               </Link>

@@ -187,74 +187,74 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-8 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/20 p-3 rounded-lg">
-              <Folder className="h-8 w-8" />
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+              <Folder className="h-6 w-6 sm:h-8 sm:w-8" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Document Manager</h1>
-              <p className="text-indigo-100 text-lg">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">Document Manager</h1>
+              <p className="text-indigo-100 text-sm sm:text-base lg:text-lg">
                 Upload, manage and verify your documents for job applications
               </p>
             </div>
           </div>
           <button
             onClick={() => setUploadModalOpen(true)}
-            className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center space-x-2"
+            className="bg-white text-indigo-600 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
             <span>Upload Document</span>
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Documents</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Documents</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
             </div>
-            <div className="p-3 rounded-lg bg-blue-100">
-              <Folder className="h-6 w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-blue-100 flex-shrink-0">
+              <Folder className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Verified</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{stats.verified}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Verified</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mt-1">{stats.verified}</p>
             </div>
-            <div className="p-3 rounded-lg bg-green-100">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-green-100 flex-shrink-0">
+              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
             </div>
-            <div className="p-3 rounded-lg bg-yellow-100">
-              <AlertCircle className="h-6 w-6 text-yellow-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-yellow-100 flex-shrink-0">
+              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-yellow-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Rejected</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{stats.rejected}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Rejected</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mt-1">{stats.rejected}</p>
             </div>
-            <div className="p-3 rounded-lg bg-red-100">
-              <AlertCircle className="h-6 w-6 text-red-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-red-100 flex-shrink-0">
+              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-red-600" />
             </div>
           </div>
         </div>

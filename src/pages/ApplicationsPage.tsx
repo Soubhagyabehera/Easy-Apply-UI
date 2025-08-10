@@ -128,92 +128,101 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-blue-700 rounded-2xl p-8 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/20 p-3 rounded-lg">
-              <FileText className="h-8 w-8" />
+      <div className="bg-gradient-to-r from-green-600 to-blue-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold mb-2">My Applications</h1>
-              <p className="text-green-100 text-lg">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">My Applications</h1>
+              <p className="text-green-100 text-sm sm:text-base lg:text-lg">
                 Track and manage all your job applications in one place
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-green-100">Total Applications</div>
+          <div className="text-left sm:text-right">
+            <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
+            <div className="text-green-100 text-sm sm:text-base">Total Applications</div>
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200">
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total</div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{stats.total}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Total</div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.submitted}</div>
-            <div className="text-sm text-gray-600">Submitted</div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{stats.submitted}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Submitted</div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200">
           <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.under_review}</div>
-            <div className="text-sm text-gray-600">Under Review</div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600">{stats.under_review}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Under Review</div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200">
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.shortlisted}</div>
-            <div className="text-sm text-gray-600">Shortlisted</div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{stats.shortlisted}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Shortlisted</div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200">
           <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-600">{stats.selected}</div>
-            <div className="text-sm text-gray-600">Selected</div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600">{stats.selected}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Selected</div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200">
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-            <div className="text-sm text-gray-600">Rejected</div>
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">{stats.rejected}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Rejected</div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Filter Applications</h2>
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
+      <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center">
+            <Filter className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            Filter Applications
+          </h2>
+          <div className="flex space-x-2">
             <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              <RefreshCw className="h-4 w-4 mr-1 inline" />
+              Refresh
+            </button>
+            <button 
+              onClick={() => setFilters({ status: '', department: '', dateRange: '', search: '' })}
+              className="text-gray-600 hover:text-gray-700 text-sm font-medium"
+            >
               Clear All
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="relative sm:col-span-2 lg:col-span-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search applications..."
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="pl-10 pr-4 py-2.5 sm:py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
               value={filters.search}
               onChange={(e) => setFilters({...filters, search: e.target.value})}
             />
           </div>
           <select
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             value={filters.status}
             onChange={(e) => setFilters({...filters, status: e.target.value})}
           >
@@ -225,7 +234,7 @@ export default function ApplicationsPage() {
             <option value="rejected">Rejected</option>
           </select>
           <select
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             value={filters.department}
             onChange={(e) => setFilters({...filters, department: e.target.value})}
           >
@@ -237,7 +246,7 @@ export default function ApplicationsPage() {
             <option value="Police">Police</option>
           </select>
           <select
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             value={filters.dateRange}
             onChange={(e) => setFilters({...filters, dateRange: e.target.value})}
           >
@@ -250,11 +259,11 @@ export default function ApplicationsPage() {
       </div>
 
       {/* Applications List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {filteredApplications.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No applications found matching your criteria.</p>
+          <div className="text-center py-8 sm:py-12 bg-white rounded-lg sm:rounded-xl">
+            <FileText className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <p className="text-gray-500 text-base sm:text-lg">No applications found matching your criteria.</p>
           </div>
         ) : (
           filteredApplications.map((application) => {
@@ -262,47 +271,47 @@ export default function ApplicationsPage() {
             const StatusIcon = statusInfo.icon
             
             return (
-              <div key={application.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">{application.jobTitle}</h3>
-                      <div className={`flex items-center space-x-2 px-3 py-1 rounded-full bg-${statusInfo.color}-100`}>
-                        <StatusIcon className={`h-4 w-4 text-${statusInfo.color}-600`} />
-                        <span className={`text-sm font-medium text-${statusInfo.color}-700`}>
+              <div key={application.id} className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 sm:mb-4 space-y-3 sm:space-y-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
+                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 break-words">{application.jobTitle}</h3>
+                      <div className={`flex items-center space-x-2 px-2 sm:px-3 py-1 rounded-full bg-${statusInfo.color}-100 self-start`}>
+                        <StatusIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-${statusInfo.color}-600`} />
+                        <span className={`text-xs sm:text-sm font-medium text-${statusInfo.color}-700`}>
                           {statusInfo.label}
                         </span>
                       </div>
                     </div>
-                    <p className="text-gray-600 font-medium mb-2">{application.company}</p>
+                    <p className="text-gray-600 font-medium mb-2 text-sm sm:text-base">{application.company}</p>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                       <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>Applied: {application.appliedDate}</span>
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="truncate">Applied: {application.appliedDate}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4" />
-                        <span>ID: {application.applicationId}</span>
+                        <FileText className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="truncate">ID: {application.applicationId}</span>
                       </div>
                       {application.examDate && (
                         <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4" />
-                          <span>Exam: {application.examDate}</span>
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="truncate">Exam: {application.examDate}</span>
                         </div>
                       )}
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium">Fee: {application.applicationFee}</span>
+                        <span className="font-medium truncate">Fee: {application.applicationFee}</span>
                       </div>
                     </div>
 
                     {application.nextAction && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
                         <div className="flex items-start space-x-2">
-                          <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-800">Next Action Required</p>
-                            <p className="text-sm text-blue-700">{application.nextAction}</p>
+                          <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm font-medium text-blue-800">Next Action Required</p>
+                            <p className="text-xs sm:text-sm text-blue-700">{application.nextAction}</p>
                           </div>
                         </div>
                       </div>

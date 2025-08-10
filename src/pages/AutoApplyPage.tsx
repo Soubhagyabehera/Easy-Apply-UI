@@ -95,37 +95,37 @@ export default function AutoApplyPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl p-8 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/20 p-3 rounded-lg">
-              <Zap className="h-8 w-8" />
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white">
+        <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+              <Zap className="h-6 w-6 sm:h-8 sm:w-8" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Auto Apply</h1>
-              <p className="text-purple-100 text-lg">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">Auto Apply</h1>
+              <p className="text-purple-100 text-sm sm:text-base lg:text-lg">
                 Let AI automatically apply to jobs that match your preferences
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <div className="text-2xl font-bold">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <div className="text-left sm:text-right">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold">
                 {isAutoApplyEnabled ? 'Active' : 'Inactive'}
               </div>
-              <div className="text-purple-100">Auto Apply Status</div>
+              <div className="text-purple-100 text-sm sm:text-base">Auto Apply Status</div>
             </div>
             <button
               onClick={() => setIsAutoApplyEnabled(!isAutoApplyEnabled)}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-colors ${
+              className={`flex items-center justify-center space-x-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-colors text-sm sm:text-base ${
                 isAutoApplyEnabled
                   ? 'bg-red-500 hover:bg-red-600 text-white'
                   : 'bg-white text-purple-600 hover:bg-purple-50'
               }`}
             >
-              {isAutoApplyEnabled ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+              {isAutoApplyEnabled ? <Pause className="h-4 w-4 sm:h-5 sm:w-5" /> : <Play className="h-4 w-4 sm:h-5 sm:w-5" />}
               <span>{isAutoApplyEnabled ? 'Pause' : 'Start'} Auto Apply</span>
             </button>
           </div>
@@ -133,48 +133,48 @@ export default function AutoApplyPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Applications Today</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">3</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Applications Today</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">3</p>
             </div>
-            <div className="p-3 rounded-lg bg-green-100">
-              <Target className="h-6 w-6 text-green-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-green-100 flex-shrink-0">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Success Rate</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">85%</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Success Rate</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">85%</p>
             </div>
-            <div className="p-3 rounded-lg bg-blue-100">
-              <CheckCircle className="h-6 w-6 text-blue-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-blue-100 flex-shrink-0">
+              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">1</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">1</p>
             </div>
-            <div className="p-3 rounded-lg bg-yellow-100">
-              <Clock className="h-6 w-6 text-yellow-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-yellow-100 flex-shrink-0">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-yellow-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Applied</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">47</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Applied</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">47</p>
             </div>
-            <div className="p-3 rounded-lg bg-purple-100">
-              <Zap className="h-6 w-6 text-purple-600" />
+            <div className="p-2 sm:p-3 rounded-lg bg-purple-100 flex-shrink-0">
+              <Zap className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-purple-600" />
             </div>
           </div>
         </div>
