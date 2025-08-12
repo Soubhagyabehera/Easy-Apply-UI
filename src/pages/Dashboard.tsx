@@ -349,7 +349,7 @@ export default function Dashboard() {
                           <Clock className="h-3 w-3 text-red-600" />
                         </div>
                         <span className="text-red-600 font-semibold truncate">
-                          {job.application_deadline || job.last_date || 'Check notification'}
+                          {job.apply_last_date || job.application_deadline || job.last_date || 'Check notification'}
                         </span>
                       </div>
                       <div className="flex items-center space-x-1 text-gray-600">
@@ -381,7 +381,11 @@ export default function Dashboard() {
                         <span>View</span>
                       </button>
                       <a
-                        href={job.apply_url || job.career_url || '#'}
+                        href={(() => {
+                          const link = job.apply_link || job.apply_url || job.career_url || '#';
+                          if (link === '#') return link;
+                          return link.startsWith('http://') || link.startsWith('https://') ? link : `https://${link}`;
+                        })()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-emerald-600 hover:to-green-700 transition-all duration-300 flex items-center justify-center space-x-1.5 shadow-md hover:shadow-lg"
