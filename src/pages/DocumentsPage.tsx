@@ -2,8 +2,11 @@ import { useState } from 'react'
 import { 
   Folder, Upload, Download, Eye, Trash2, 
   CheckCircle, AlertCircle, Plus, FileText, 
-  Image, File, Calendar, Shield, User 
+  Image, File, Calendar, Shield, User, Settings, 
+  Scissors, RotateCw, X, Move, Palette, Camera, 
+  PenTool, Combine, Maximize2, FileImage 
 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 interface Document {
   id: number
@@ -21,6 +24,7 @@ interface Document {
 }
 
 export default function DocumentsPage() {
+  const { isAuthenticated } = useAuth()
   const [documents, setDocuments] = useState<Document[]>([
     {
       id: 1,
@@ -92,6 +96,10 @@ export default function DocumentsPage() {
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'documents' | 'tools'>('documents')
+  const [activeToolModal, setActiveToolModal] = useState<string | null>(null)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [processedFiles, setProcessedFiles] = useState<any[]>([])
 
   const documentCategories = [
     { id: 'all', name: 'All Documents', icon: Folder },
@@ -196,24 +204,62 @@ export default function DocumentsPage() {
               <Folder className="h-6 w-6 sm:h-8 sm:w-8" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">Document Manager</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">
+                {isAuthenticated ? 'Document Manager' : 'Document Tools'}
+              </h1>
               <p className="text-indigo-100 text-sm sm:text-base lg:text-lg">
-                Upload, manage and verify your documents for job applications
+                {isAuthenticated 
+                  ? 'Upload, manage and verify your documents for job applications'
+                  : 'Professional document editing tools for job applications'
+                }
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setUploadModalOpen(true)}
-            className="bg-white text-indigo-600 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-          >
-            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Upload Document</span>
-          </button>
+          {isAuthenticated && (
+            <button
+              onClick={() => setUploadModalOpen(true)}
+              className="bg-white text-indigo-600 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+            >
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span>Upload Document</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+      {/* Tabs for authenticated users */}
+      {isAuthenticated && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab('documents')}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'documents'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <Folder className="h-4 w-4 inline mr-2" />
+              My Documents
+            </button>
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'tools'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <Settings className="h-4 w-4 inline mr-2" />
+              Document Tools
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats - only show for authenticated users on documents tab */}
+      {isAuthenticated && activeTab === 'documents' && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
@@ -258,9 +304,152 @@ export default function DocumentsPage() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      {/* Document Tools Section */}
+      {(!isAuthenticated || activeTab === 'tools') && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Document Editing Tools</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Photo Editor */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-3 bg-blue-600 rounded-lg">
+                  <Image className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Photo Editor</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Resize, crop, and enhance passport photos to meet job application requirements.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Crop</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Resize</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Background</span>
+              </div>
+              <button 
+                onClick={() => setActiveToolModal('photo-editor')}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Open Photo Editor
+              </button>
+            </div>
+
+            {/* PDF Tools */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-3 bg-green-600 rounded-lg">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">PDF Tools</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Compress, merge, split, and convert PDF documents for applications.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Compress</span>
+                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Merge</span>
+                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Split</span>
+              </div>
+              <button 
+                onClick={() => setActiveToolModal('pdf-tools')}
+                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Open PDF Tools
+              </button>
+            </div>
+
+            {/* Signature Creator */}
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-3 bg-purple-600 rounded-lg">
+                  <User className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Signature Creator</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Create professional digital signatures for official documents.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Draw</span>
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Type</span>
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Upload</span>
+              </div>
+              <button 
+                onClick={() => setActiveToolModal('signature-creator')}
+                className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Create Signature
+              </button>
+            </div>
+
+            {/* Document Scanner */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-3 bg-orange-600 rounded-lg">
+                  <Eye className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Document Scanner</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Scan and enhance physical documents using your camera.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">Scan</span>
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">Enhance</span>
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">OCR</span>
+              </div>
+              <button 
+                onClick={() => setActiveToolModal('document-scanner')}
+                className="w-full bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Open Scanner
+              </button>
+            </div>
+
+            {/* Format Converter */}
+            <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border border-red-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-3 bg-red-600 rounded-lg">
+                  <RotateCw className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Format Converter</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Convert between different file formats (JPG, PNG, PDF, etc.).</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">JPG</span>
+                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">PNG</span>
+                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">PDF</span>
+              </div>
+              <button 
+                onClick={() => setActiveToolModal('format-converter')}
+                className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Convert Files
+              </button>
+            </div>
+
+            {/* Size Optimizer */}
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border border-teal-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-3 bg-teal-600 rounded-lg">
+                  <Scissors className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Size Optimizer</h3>
+              </div>
+              <p className="text-gray-600 mb-4">Optimize file sizes to meet application requirements without quality loss.</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">Compress</span>
+                <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">Optimize</span>
+                <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">Batch</span>
+              </div>
+              <button 
+                onClick={() => setActiveToolModal('size-optimizer')}
+                className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                Optimize Files
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* My Documents Section - only for authenticated users */}
+      {isAuthenticated && activeTab === 'documents' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Categories Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -431,10 +620,11 @@ export default function DocumentsPage() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* Upload Modal */}
-      {uploadModalOpen && (
+      {/* Upload Modal - only show for authenticated users */}
+      {isAuthenticated && uploadModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-6">
@@ -499,6 +689,470 @@ export default function DocumentsPage() {
               <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
                 Upload
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tool Modals */}
+      {activeToolModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {activeToolModal === 'photo-editor' && 'Photo Editor'}
+                {activeToolModal === 'pdf-tools' && 'PDF Tools'}
+                {activeToolModal === 'signature-creator' && 'Signature Creator'}
+                {activeToolModal === 'document-scanner' && 'Document Scanner'}
+                {activeToolModal === 'format-converter' && 'Format Converter'}
+                {activeToolModal === 'size-optimizer' && 'Size Optimizer'}
+              </h2>
+              <button
+                onClick={() => {
+                  setActiveToolModal(null)
+                  setUploadedFiles([])
+                  setProcessedFiles([])
+                }}
+                className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Tool Content */}
+            <div className="p-6">
+              {/* Photo Editor Tool */}
+              {activeToolModal === 'photo-editor' && (
+                <div className="space-y-6">
+                  {/* Upload Area */}
+                  <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50">
+                    <Image className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Images</h3>
+                    <p className="text-gray-600 mb-4">Drag and drop your images here, or click to browse</p>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      id="photo-upload"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setUploadedFiles(Array.from(e.target.files))
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="photo-upload"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose Files
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, GIF (Max 10MB each)</p>
+                  </div>
+
+                  {/* Tool Options */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Resize Options */}
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <Maximize2 className="h-4 w-4 mr-2" />
+                        Resize Image
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Width (px)</label>
+                            <input
+                              type="number"
+                              placeholder="800"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Height (px)</label>
+                            <input
+                              type="number"
+                              placeholder="600"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Max File Size</label>
+                          <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="100kb">100 KB</option>
+                            <option value="500kb">500 KB</option>
+                            <option value="1mb">1 MB</option>
+                            <option value="2mb">2 MB</option>
+                          </select>
+                        </div>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" className="rounded border-gray-300" />
+                          <span className="text-sm text-gray-700">Maintain aspect ratio</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Background Options */}
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <Palette className="h-4 w-4 mr-2" />
+                        Change Background
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          <button className="aspect-square bg-white border-2 border-gray-300 rounded-lg hover:border-blue-500 flex items-center justify-center">
+                            <span className="text-xs font-medium">White</span>
+                          </button>
+                          <button className="aspect-square bg-black border-2 border-gray-300 rounded-lg hover:border-blue-500 flex items-center justify-center">
+                            <span className="text-xs font-medium text-white">Black</span>
+                          </button>
+                          <button className="aspect-square bg-blue-500 border-2 border-gray-300 rounded-lg hover:border-blue-500 flex items-center justify-center">
+                            <span className="text-xs font-medium text-white">Blue</span>
+                          </button>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Custom Color</label>
+                          <input
+                            type="color"
+                            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                            defaultValue="#ffffff"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Process Button */}
+                  <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                    Process Images
+                  </button>
+                </div>
+              )}
+
+              {/* Format Converter Tool */}
+              {activeToolModal === 'format-converter' && (
+                <div className="space-y-6">
+                  {/* Upload Area */}
+                  <div className="border-2 border-dashed border-red-300 rounded-xl p-8 text-center bg-red-50">
+                    <RotateCw className="h-12 w-12 text-red-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Files to Convert</h3>
+                    <p className="text-gray-600 mb-4">Drag and drop your files here, or click to browse</p>
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      id="convert-upload"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setUploadedFiles(Array.from(e.target.files))
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="convert-upload"
+                      className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose Files
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, PDF, DOCX, TXT</p>
+                  </div>
+
+                  {/* Conversion Options */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Convert To</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                        <FileImage className="h-6 w-6 mx-auto mb-1 text-red-600" />
+                        <span className="text-sm font-medium">JPG</span>
+                      </button>
+                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                        <Image className="h-6 w-6 mx-auto mb-1 text-red-600" />
+                        <span className="text-sm font-medium">PNG</span>
+                      </button>
+                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                        <FileText className="h-6 w-6 mx-auto mb-1 text-red-600" />
+                        <span className="text-sm font-medium">PDF</span>
+                      </button>
+                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                        <File className="h-6 w-6 mx-auto mb-1 text-red-600" />
+                        <span className="text-sm font-medium">DOCX</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Convert Button */}
+                  <button className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                    Convert Files
+                  </button>
+                </div>
+              )}
+
+              {/* PDF Tools */}
+              {activeToolModal === 'pdf-tools' && (
+                <div className="space-y-6">
+                  {/* Upload Area */}
+                  <div className="border-2 border-dashed border-green-300 rounded-xl p-8 text-center bg-green-50">
+                    <Combine className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload PDF Files</h3>
+                    <p className="text-gray-600 mb-4">Upload multiple files to combine into one PDF</p>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,image/*"
+                      className="hidden"
+                      id="pdf-upload"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setUploadedFiles(Array.from(e.target.files))
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="pdf-upload"
+                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose Files
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">Supported: PDF, JPG, PNG (Max 50MB total)</p>
+                  </div>
+
+                  {/* PDF Operations */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button className="p-4 border border-green-300 rounded-xl hover:bg-green-50 text-center">
+                      <Combine className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                      <span className="font-semibold text-gray-900">Combine PDFs</span>
+                      <p className="text-sm text-gray-600 mt-1">Merge multiple files into one PDF</p>
+                    </button>
+                    <button className="p-4 border border-green-300 rounded-xl hover:bg-green-50 text-center">
+                      <Scissors className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                      <span className="font-semibold text-gray-900">Split PDF</span>
+                      <p className="text-sm text-gray-600 mt-1">Extract pages from PDF</p>
+                    </button>
+                    <button className="p-4 border border-green-300 rounded-xl hover:bg-green-50 text-center">
+                      <Move className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                      <span className="font-semibold text-gray-900">Compress PDF</span>
+                      <p className="text-sm text-gray-600 mt-1">Reduce file size</p>
+                    </button>
+                  </div>
+
+                  {/* Process Button */}
+                  <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                    Process PDFs
+                  </button>
+                </div>
+              )}
+
+              {/* Signature Creator Tool */}
+              {activeToolModal === 'signature-creator' && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <PenTool className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your Digital Signature</h3>
+                    <p className="text-gray-600">Choose how you'd like to create your signature</p>
+                  </div>
+
+                  {/* Signature Methods */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button className="p-6 border-2 border-purple-300 rounded-xl hover:bg-purple-50 text-center">
+                      <PenTool className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                      <span className="font-semibold text-gray-900 block">Draw</span>
+                      <p className="text-sm text-gray-600 mt-1">Draw your signature with mouse or touch</p>
+                    </button>
+                    <button className="p-6 border-2 border-purple-300 rounded-xl hover:bg-purple-50 text-center">
+                      <FileText className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                      <span className="font-semibold text-gray-900 block">Type</span>
+                      <p className="text-sm text-gray-600 mt-1">Type your name in signature fonts</p>
+                    </button>
+                    <button className="p-6 border-2 border-purple-300 rounded-xl hover:bg-purple-50 text-center">
+                      <Upload className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                      <span className="font-semibold text-gray-900 block">Upload</span>
+                      <p className="text-sm text-gray-600 mt-1">Upload an image of your signature</p>
+                    </button>
+                  </div>
+
+                  {/* Drawing Canvas Area */}
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg h-40 flex items-center justify-center">
+                      <p className="text-gray-500">Signature canvas will appear here</p>
+                    </div>
+                    <div className="flex justify-between items-center mt-4">
+                      <div className="flex space-x-2">
+                        <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Clear</button>
+                        <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Undo</button>
+                      </div>
+                      <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                        Save Signature
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Document Scanner Tool */}
+              {activeToolModal === 'document-scanner' && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Document Scanner</h3>
+                    <p className="text-gray-600">Scan physical documents using your camera or upload images</p>
+                  </div>
+
+                  {/* Scanner Options */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button className="p-6 border-2 border-orange-300 rounded-xl hover:bg-orange-50 text-center">
+                      <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                      <span className="font-semibold text-gray-900 block mb-2">Use Camera</span>
+                      <p className="text-sm text-gray-600">Scan documents using your device camera</p>
+                    </button>
+                    <div className="p-6 border-2 border-dashed border-orange-300 rounded-xl text-center bg-orange-50">
+                      <Upload className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                      <span className="font-semibold text-gray-900 block mb-2">Upload Images</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        id="scanner-upload"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setUploadedFiles(Array.from(e.target.files))
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="scanner-upload"
+                        className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer"
+                      >
+                        Choose Images
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Enhancement Options */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Enhancement Options</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" className="rounded border-gray-300" defaultChecked />
+                        <span className="text-sm text-gray-700">Auto-crop document</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" className="rounded border-gray-300" defaultChecked />
+                        <span className="text-sm text-gray-700">Enhance contrast</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" className="rounded border-gray-300" />
+                        <span className="text-sm text-gray-700">Convert to grayscale</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" className="rounded border-gray-300" />
+                        <span className="text-sm text-gray-700">OCR text extraction</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Process Button */}
+                  <button className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition-colors font-semibold">
+                    Scan & Process
+                  </button>
+                </div>
+              )}
+
+              {/* Size Optimizer Tool */}
+              {activeToolModal === 'size-optimizer' && (
+                <div className="space-y-6">
+                  {/* Upload Area */}
+                  <div className="border-2 border-dashed border-teal-300 rounded-xl p-8 text-center bg-teal-50">
+                    <Scissors className="h-12 w-12 text-teal-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Files to Optimize</h3>
+                    <p className="text-gray-600 mb-4">Reduce file sizes without losing quality</p>
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      id="optimize-upload"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setUploadedFiles(Array.from(e.target.files))
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="optimize-upload"
+                      className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 cursor-pointer"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose Files
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, PDF, DOCX</p>
+                  </div>
+
+                  {/* Optimization Settings */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Optimization Settings</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Target File Size</label>
+                        <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500">
+                          <option value="auto">Auto (Best compression)</option>
+                          <option value="100kb">Under 100 KB</option>
+                          <option value="500kb">Under 500 KB</option>
+                          <option value="1mb">Under 1 MB</option>
+                          <option value="2mb">Under 2 MB</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Quality Level</label>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          defaultValue="80"
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>Smaller size</span>
+                          <span>Better quality</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Optimize Button */}
+                  <button className="w-full bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 transition-colors font-semibold">
+                    Optimize Files
+                  </button>
+                </div>
+              )}
+
+              {/* Output Section */}
+              {processedFiles.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Processed Files</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {processedFiles.map((file, index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-8 w-8 text-blue-600" />
+                          <div>
+                            <p className="font-medium text-gray-900">{file.name}</p>
+                            <p className="text-sm text-gray-600">{file.size}</p>
+                          </div>
+                        </div>
+                        <button className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                          <Download className="h-4 w-4" />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

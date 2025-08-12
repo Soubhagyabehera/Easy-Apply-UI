@@ -77,11 +77,9 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/documents" element={
-          <ProtectedRoute>
-            <Layout>
-              <DocumentsPage />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <DocumentsPage />
+          </Layout>
         } />
       </Routes>
     </AuthProvider>

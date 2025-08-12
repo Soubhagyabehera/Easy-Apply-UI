@@ -28,7 +28,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/applications', label: 'My Applications', icon: FileText },
     { path: '/auto-apply', label: 'Auto Apply', icon: Zap },
-    { path: '/documents', label: 'Documents', icon: Folder },
+    { path: '/documents', label: isAuthenticated ? 'Documents' : 'Document Tools', icon: Folder },
   ]
 
   return (
