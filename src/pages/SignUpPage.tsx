@@ -59,7 +59,7 @@ const SignUpPage: React.FC = () => {
       // Demo user for testing without Google OAuth
       const demoTokenData: GoogleTokenData = {
         sub: 'demo_user_456',
-        email: 'newdemo@easyapply.com',
+        email: 'newdemo@Applyze.com',
         name: 'New Demo User',
         picture: '',
       }
@@ -89,7 +89,7 @@ const SignUpPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
-            Join EasyApply
+            Join Applyze
           </h2>
           <p className="mt-1 sm:mt-2 text-center text-xs sm:text-sm text-gray-600">
             Start your journey with AI-powered job applications

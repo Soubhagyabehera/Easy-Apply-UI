@@ -23,23 +23,69 @@ export const jobService = {
     return Array.isArray(response.data) ? response.data : []
   },
 
-  async getJobById(id: number): Promise<Job> {
-    const response = await api.get(`/jobs/${id}`)
-    return response.data
+  async getJobById(jobId: string): Promise<Job> {
+    const response = await api.get(`/jobs/${jobId}`)
+    
+    if (response.data && response.data.status === 'success') {
+      return response.data.data
+    }
+    
+    throw new Error(response.data?.message || 'Job not found')
   },
 
-  async createJob(job: Omit<Job, 'id' | 'is_active'>): Promise<Job> {
-    const response = await api.post('/jobs/', job)
-    return response.data
+  async createJob(job: Omit<Job, 'job_id' | 'created_at' | 'updated_at'>): Promise<Job> {
+    const response = await api.post('/jobs/manual', job)
+    
+    if (response.data && response.data.status === 'success') {
+      return response.data.data
+    }
+    
+    throw new Error(response.data?.message || 'Failed to create job')
   },
 
-  async updateJob(id: number, job: Partial<Job>): Promise<Job> {
-    const response = await api.put(`/jobs/${id}`, job)
-    return response.data
+  async updateJob(jobId: string, job: Partial<Job>): Promise<Job> {
+    const response = await api.put(`/jobs/${jobId}`, job)
+    
+    if (response.data && response.data.status === 'success') {
+      return response.data.data
+    }
+    
+    throw new Error(response.data?.message || 'Failed to update job')
   },
 
-  async deleteJob(id: number): Promise<void> {
-    await api.delete(`/jobs/${id}`)
+  async deleteJob(jobId: string): Promise<void> {
+    const response = await api.delete(`/jobs/${jobId}`)
+    
+    if (response.data && response.data.status !== 'success') {
+      throw new Error(response.data?.message || 'Failed to delete job')
+    }
+  },
+
+  async searchJobsAdvanced(filters: {
+    limit?: number
+    location?: string
+    company?: string
+    source?: string
+    min_vacancies?: number
+    max_fee?: number
+    posted_after?: string
+    search_term?: string
+  }): Promise<Job[]> {
+    const params = new URLSearchParams()
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value.toString())
+      }
+    })
+    
+    const response = await api.get(`/jobs/search/advanced?${params.toString()}`)
+    
+    if (response.data && response.data.status === 'success') {
+      return response.data.data || []
+    }
+    
+    return []
   },
 
   async getGovernmentJobs(filters?: {

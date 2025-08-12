@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, Star, UserPlus, LogIn, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase } from 'lucide-react'
+import { Search, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, Star, UserPlus, LogIn, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase } from 'lucide-react'
 import { jobService } from '../services/jobService'
 import { Job, JobCategory } from '../types/job'
 import { useAuth } from '../contexts/AuthContext'
@@ -123,12 +123,7 @@ export default function Dashboard() {
     }
   ]
 
-  const stats = [
-    { label: 'Total Jobs', value: '9,014', icon: Building2, color: 'blue' },
-    { label: 'Applications', value: '1,234', icon: FileText, color: 'green' },
-    { label: 'Interviews', value: '23', icon: Users, color: 'purple' },
-    { label: 'Success Rate', value: '78%', icon: TrendingUp, color: 'orange' }
-  ]
+  // Stats removed - not currently used in the UI
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 space-y-4 sm:space-y-6">
@@ -137,7 +132,7 @@ export default function Dashboard() {
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">
-              {isAuthenticated ? `Welcome, ${(user as any)?.name || 'User'}!` : 'Welcome to EasyApply'}
+              {isAuthenticated ? `Welcome, ${(user as any)?.name || 'User'}!` : 'Welcome to Applyze'}
             </h1>
             <p className="text-blue-100 text-sm sm:text-base lg:text-lg mb-4">
               Revolutionizing how candidates apply to government jobs - from finding to applying
@@ -354,7 +349,7 @@ export default function Dashboard() {
                           <Clock className="h-3 w-3 text-red-600" />
                         </div>
                         <span className="text-red-600 font-semibold truncate">
-                          {job.last_date || 'Check notification'}
+                          {job.application_deadline || job.last_date || 'Check notification'}
                         </span>
                       </div>
                       <div className="flex items-center space-x-1 text-gray-600">
@@ -363,7 +358,13 @@ export default function Dashboard() {
                       </div>
                       <div className="flex items-center space-x-1 text-gray-600">
                         <TrendingUp className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                        <span className="truncate">Fee: {(job as any).application_fee || 'As per category'}</span>
+                        <span className="truncate">Fee: {(job as any).fee ? `₹${(job as any).fee}` : 'As per category'}</span>
+                      </div>
+                      <div className="flex items-center space-x-1 text-gray-600">
+                        <Briefcase className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">
+                          {job.job_type ? `${job.job_type.toUpperCase()}` : 'Government'} • {job.contract_or_permanent ? job.contract_or_permanent : 'Permanent'}
+                        </span>
                       </div>
                     </div>
                     
@@ -455,7 +456,7 @@ export default function Dashboard() {
                     <Users className="h-4 w-4 md:h-5 md:w-5 text-gray-400 flex-shrink-0" />
                     <div>
                       <p className="text-xs md:text-sm text-gray-500">Vacancies</p>
-                      <p className="font-medium text-gray-900 text-sm md:text-base">{(selectedJob as any).vacancies || 'Multiple'}</p>
+                      <p className="font-medium text-gray-900 text-sm md:text-base">{selectedJob.vacancies || 'Multiple'}</p>
                     </div>
                   </div>
                 </div>
@@ -471,7 +472,9 @@ export default function Dashboard() {
                     <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-gray-400 flex-shrink-0" />
                     <div>
                       <p className="text-xs md:text-sm text-gray-500">Application Fee</p>
-                      <p className="font-medium text-gray-900 text-sm md:text-base">{(selectedJob as any).application_fee || 'As per category'}</p>
+                      <p className="font-medium text-gray-900 text-sm md:text-base">
+                        {selectedJob.fee ? `₹${selectedJob.fee}` : selectedJob.applicationFee || 'As per category'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -481,7 +484,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Job Description</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  {selectedJob.description || 'This is a government job opportunity with competitive benefits, job security, and excellent career growth prospects. The position offers a chance to serve the nation while building a rewarding career in the public sector.'}
+                  {selectedJob.job_description || selectedJob.description || 'This is a government job opportunity with competitive benefits, job security, and excellent career growth prospects. The position offers a chance to serve the nation while building a rewarding career in the public sector.'}
                 </p>
               </div>
 
@@ -496,21 +499,30 @@ export default function Dashboard() {
                     <GraduationCap className="h-5 w-5 text-green-600 mt-0.5" />
                     <div>
                       <p className="font-medium text-green-900">Educational Qualification</p>
-                      <p className="text-green-700 text-sm">Graduate degree from recognized university or equivalent qualification as specified in the notification.</p>
+                      <p className="text-green-700 text-sm">
+                        {selectedJob.eligibility_criteria?.education_qualification || 
+                         'Graduate degree from recognized university or equivalent qualification as specified in the notification.'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
                     <Users className="h-5 w-5 text-green-600 mt-0.5" />
                     <div>
                       <p className="font-medium text-green-900">Age Limit</p>
-                      <p className="text-green-700 text-sm">18-30 years (relaxation as per government norms for reserved categories)</p>
+                      <p className="text-green-700 text-sm">
+                        {selectedJob.eligibility_criteria?.age_limit || 
+                         '18-30 years (relaxation as per government norms for reserved categories)'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
                     <AlertCircle className="h-5 w-5 text-green-600 mt-0.5" />
                     <div>
                       <p className="font-medium text-green-900">Other Requirements</p>
-                      <p className="text-green-700 text-sm">Indian citizenship, physical fitness, and other criteria as mentioned in the official notification.</p>
+                      <p className="text-green-700 text-sm">
+                        {selectedJob.eligibility_criteria?.other_requirement || 
+                         'Indian citizenship, physical fitness, and other criteria as mentioned in the official notification.'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -524,16 +536,19 @@ export default function Dashboard() {
                 </h3>
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      'Educational Certificates & Mark Sheets',
-                      'Caste Certificate (if applicable)',
-                      'Age Proof (Birth Certificate/10th Certificate)',
-                      'Experience Certificates (if required)',
-                      'Passport Size Photographs',
-                      'Signature Specimen',
-                      'Identity Proof (Aadhar/PAN/Passport)',
-                      'Income Certificate (if applicable)'
-                    ].map((doc, index) => (
+                    {(selectedJob.required_documents && selectedJob.required_documents.length > 0 
+                      ? selectedJob.required_documents 
+                      : [
+                          'Educational Certificates & Mark Sheets',
+                          'Caste Certificate (if applicable)',
+                          'Age Proof (Birth Certificate/10th Certificate)',
+                          'Experience Certificates (if required)',
+                          'Passport Size Photographs',
+                          'Signature Specimen',
+                          'Identity Proof (Aadhar/PAN/Passport)',
+                          'Income Certificate (if applicable)'
+                        ]
+                    ).map((doc, index) => (
                       <div key={index} className="flex items-center space-x-2">
                         <CheckCircle className="h-4 w-4 text-blue-600" />
                         <span className="text-blue-900 text-sm">{doc}</span>
