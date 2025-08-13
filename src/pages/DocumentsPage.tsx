@@ -7,6 +7,12 @@ import {
   PenTool, Combine, Maximize2, FileImage 
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { photoEditorService } from '../services/photoEditorService'
+import { pdfToolsService } from '../services/pdfToolsService'
+import { signatureCreatorService } from '../services/signatureCreatorService'
+import { documentScannerService } from '../services/documentScannerService'
+import { formatConverterService } from '../services/formatConverterService'
+import { sizeOptimizerService } from '../services/sizeOptimizerService'
 
 interface Document {
   id: number
@@ -98,8 +104,23 @@ export default function DocumentsPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'documents' | 'tools'>('documents')
   const [activeToolModal, setActiveToolModal] = useState<string | null>(null)
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
-  const [processedFiles, setProcessedFiles] = useState<any[]>([])
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])  
+  const [processedFiles, setProcessedFiles] = useState<any[]>([])  
+  const [isProcessing, setIsProcessing] = useState(false)  
+  const [outputFormat, setOutputFormat] = useState<'JPG' | 'PNG' | 'PDF'>('JPG')  
+  const [imageWidth, setImageWidth] = useState<number>(200)  
+  const [imageHeight, setImageHeight] = useState<number>(200)
+  
+  // Additional state for other document tools
+  const [pdfOperation, setPdfOperation] = useState<'merge' | 'split' | 'compress'>('merge')
+  const [splitPagesPerFile, setSplitPagesPerFile] = useState<number>(1)
+  const [compressionLevel, setCompressionLevel] = useState<'low' | 'medium' | 'high'>('medium')
+  const [signatureType, setSignatureType] = useState<'text' | 'draw' | 'upload'>('text')
+  const [signatureText, setSignatureText] = useState<string>('')
+  const [conversionFormat, setConversionFormat] = useState<'JPG' | 'PNG' | 'PDF' | 'DOCX'>('PDF')
+  const [enhanceImages, setEnhanceImages] = useState<boolean>(true)
+  const [autoCrop, setAutoCrop] = useState<boolean>(true)
+  const [optimizationQuality, setOptimizationQuality] = useState<number>(85)
 
   const documentCategories = [
     { id: 'all', name: 'All Documents', icon: Folder },
@@ -193,6 +214,248 @@ export default function DocumentsPage() {
         return <File className="h-6 w-6 text-gray-500" />
     }
   }
+
+  // Processing functions for document tools
+  const processPDFTool = async () => {
+    if (uploadedFiles.length === 0) {
+      alert('Please upload at least one PDF file first.');
+      return;
+    }
+    
+    setIsProcessing(true);
+    setProcessedFiles([]);
+    
+    try {
+      let result;
+      
+      if (pdfOperation === 'merge') {
+        result = await pdfToolsService.mergePDFs(uploadedFiles);
+      } else if (pdfOperation === 'split') {
+        result = await pdfToolsService.splitPDF(uploadedFiles[0], 'pages', splitPagesPerFile);
+      } else if (pdfOperation === 'compress') {
+        result = await pdfToolsService.compressPDF(uploadedFiles[0], compressionLevel);
+      }
+      
+      if (result && result.success) {
+        const processedFile = {
+          id: 0,
+          originalName: (result as any).original_filename || uploadedFiles[0].name,
+          processedName: (result as any).processed_filename || 'processed.pdf',
+          format: 'PDF',
+          size: (result as any).processed_size_mb ? (result as any).processed_size_mb * 1024 : 0,
+          url: (result as any).download_url || '',
+          downloadUrl: (result as any).download_url || '',
+          success: result.success,
+          files: (result as any).files || []
+        };
+        setProcessedFiles([processedFile]);
+      }
+    } catch (error) {
+      console.error('PDF processing failed:', error);
+      alert(`PDF processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const processSignature = async () => {
+    setIsProcessing(true);
+    setProcessedFiles([]);
+    
+    try {
+      let result;
+      
+      if (signatureType === 'text') {
+        if (!signatureText.trim()) {
+          alert('Please enter text for the signature.');
+          return;
+        }
+        result = await signatureCreatorService.createTextSignature(signatureText);
+      } else if (signatureType === 'upload' && uploadedFiles.length > 0) {
+        result = await signatureCreatorService.uploadSignature(uploadedFiles[0]);
+      } else {
+        alert('Please provide signature data.');
+        return;
+      }
+      
+      if (result && result.success) {
+        const processedFile = {
+          id: 0,
+          originalName: result.signature_text || result.original_filename || 'signature',
+          processedName: 'signature.png',
+          format: 'PNG',
+          size: result.file_size_kb || 0,
+          url: result.download_url,
+          downloadUrl: result.download_url,
+          success: result.success
+        };
+        setProcessedFiles([processedFile]);
+      }
+    } catch (error) {
+      console.error('Signature creation failed:', error);
+      alert(`Signature creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const processDocumentScan = async () => {
+    if (uploadedFiles.length === 0) {
+      alert('Please upload at least one image file first.');
+      return;
+    }
+    
+    setIsProcessing(true);
+    setProcessedFiles([]);
+    
+    try {
+      const result = await documentScannerService.scanToPDF(uploadedFiles, enhanceImages, autoCrop);
+      
+      if (result && result.success) {
+        const processedFile = {
+          id: 0,
+          originalName: (result as any).original_filename || 'scanned_document',
+          processedName: (result as any).processed_filename || 'scanned_document.pdf',
+          format: 'PDF',
+          size: (result as any).file_size_kb || 0,
+          url: (result as any).download_url || '',
+          downloadUrl: (result as any).download_url || '',
+          success: result.success,
+          pages: (result as any).total_pages || uploadedFiles.length
+        };
+        setProcessedFiles([processedFile]);
+      }
+    } catch (error) {
+      console.error('Document scan failed:', error);
+      alert(`Document scan failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const processFormatConversion = async () => {
+    if (uploadedFiles.length === 0) {
+      alert('Please upload at least one file first.');
+      return;
+    }
+    
+    setIsProcessing(true);
+    setProcessedFiles([]);
+    
+    try {
+      let result;
+      
+      if (conversionFormat === 'PDF' && uploadedFiles.every(f => f.type.startsWith('image/'))) {
+        result = await formatConverterService.imagesToPDF(uploadedFiles);
+      } else if (['JPG', 'PNG'].includes(conversionFormat) && uploadedFiles[0].type === 'application/pdf') {
+        result = await formatConverterService.pdfToImages(uploadedFiles[0], conversionFormat);
+      } else {
+        result = await formatConverterService.convertDocument(uploadedFiles[0], conversionFormat);
+      }
+      
+      if (result && result.success) {
+        const processedFile = {
+          id: 0,
+          originalName: (result as any).original_filename || uploadedFiles[0].name,
+          processedName: (result as any).processed_filename || 'converted_file',
+          format: (result as any).output_format || conversionFormat,
+          size: (result as any).file_size_kb || 0,
+          url: (result as any).download_url || '',
+          downloadUrl: (result as any).download_url || '',
+          success: result.success,
+          files: (result as any).files || []
+        };
+        setProcessedFiles([processedFile]);
+      }
+    } catch (error) {
+      console.error('Format conversion failed:', error);
+      alert(`Format conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const processSizeOptimization = async () => {
+    if (uploadedFiles.length === 0) {
+      alert('Please upload at least one file first.');
+      return;
+    }
+    
+    setIsProcessing(true);
+    setProcessedFiles([]);
+    
+    try {
+      let result;
+      
+      const imageFiles = uploadedFiles.filter(f => f.type.startsWith('image/'));
+      const pdfFiles = uploadedFiles.filter(f => f.type === 'application/pdf');
+      
+      if (imageFiles.length > 0) {
+        result = await sizeOptimizerService.optimizeImages(imageFiles, compressionLevel, optimizationQuality);
+      } else if (pdfFiles.length > 0) {
+        result = await sizeOptimizerService.optimizePDFs(pdfFiles, compressionLevel);
+      }
+      
+      if (result && result.success) {
+        const processedFile = {
+          id: 0,
+          originalName: (result as any).original_filename || uploadedFiles[0].name,
+          processedName: (result as any).processed_filename || 'optimized_file',
+          format: (result as any).file_type || 'optimized',
+          size: (result as any).optimized_size_kb || 0,
+          originalSize: (result as any).original_size_kb || 0,
+          compressionRatio: (result as any).compression_ratio || 1,
+          url: (result as any).download_url || '',
+          downloadUrl: (result as any).download_url || '',
+          success: result.success
+        };
+        setProcessedFiles([processedFile]);
+      }
+    } catch (error) {
+      console.error('Size optimization failed:', error);
+      alert(`Size optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const downloadFile = async (fileId: string, filename: string, service: string) => {
+    try {
+      let blob;
+      
+      switch (service) {
+        case 'pdf-tools':
+          blob = await pdfToolsService.downloadFile(fileId);
+          break;
+        case 'signature':
+          blob = await signatureCreatorService.downloadSignature(fileId);
+          break;
+        case 'scanner':
+          blob = await documentScannerService.downloadScan(fileId);
+          break;
+        case 'converter':
+          blob = await formatConverterService.downloadFile(fileId);
+          break;
+        case 'optimizer':
+          blob = await sizeOptimizerService.downloadFile(fileId);
+          break;
+        default:
+          throw new Error('Unknown service');
+      }
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
@@ -726,34 +989,141 @@ export default function DocumentsPage() {
               {activeToolModal === 'photo-editor' && (
                 <div className="space-y-6">
                   {/* Upload Area */}
-                  <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50">
-                    <Image className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Images</h3>
-                    <p className="text-gray-600 mb-4">Drag and drop your images here, or click to browse</p>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                      id="photo-upload"
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setUploadedFiles(Array.from(e.target.files))
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="photo-upload"
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose Files
-                    </label>
-                    <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, GIF (Max 10MB each)</p>
+                  <div className="border-2 border-dashed border-blue-300 rounded-xl bg-blue-50">
+                    {uploadedFiles.length === 0 ? (
+                      // Empty state - show upload prompt
+                      <div className="p-8 text-center">
+                        <Image className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Images</h3>
+                        <p className="text-gray-600 mb-4">Drag and drop your images here, or click to browse</p>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          className="hidden"
+                          id="photo-upload"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              setUploadedFiles(Array.from(e.target.files))
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="photo-upload"
+                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Choose Files
+                        </label>
+                        <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, GIF (Max 10MB each)</p>
+                      </div>
+                    ) : (
+                      // Files uploaded - show previews
+                      <div className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Selected Images ({uploadedFiles.length})
+                          </h3>
+                          <button
+                            onClick={() => setUploadedFiles([])}
+                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                        
+                        {/* Image Previews Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                          {uploadedFiles.map((file, index) => (
+                            <div key={index} className="relative bg-white rounded-lg border border-blue-200 overflow-hidden">
+                              <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                  onLoad={(e) => {
+                                    // Clean up object URL after image loads
+                                    setTimeout(() => {
+                                      URL.revokeObjectURL((e.target as HTMLImageElement).src);
+                                    }, 1000);
+                                  }}
+                                />
+                                {/* Remove button */}
+                                <button
+                                  onClick={() => {
+                                    const newFiles = uploadedFiles.filter((_, i) => i !== index);
+                                    setUploadedFiles(newFiles);
+                                  }}
+                                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                              <div className="p-2">
+                                <p className="text-xs text-gray-600 truncate" title={file.name}>
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {(file.size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Add more files button */}
+                        <div className="text-center">
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            id="photo-upload-more"
+                            onChange={(e) => {
+                              if (e.target.files) {
+                                const newFiles = Array.from(e.target.files);
+                                setUploadedFiles([...uploadedFiles, ...newFiles]);
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="photo-upload-more"
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add More Images
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Tool Options */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Output Format */}
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <FileImage className="h-4 w-4 mr-2" />
+                        Output Format
+                      </h4>
+                      <div className="space-y-3">
+                        <select 
+                          value={outputFormat}
+                          onChange={(e) => setOutputFormat(e.target.value as 'JPG' | 'PNG' | 'PDF')}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="JPG">JPG</option>
+                          <option value="PNG">PNG</option>
+                          <option value="PDF">PDF</option>
+                        </select>
+                        <p className="text-xs text-gray-500">
+                          {outputFormat === 'JPG' && 'Best for photos with smaller file sizes'}
+                          {outputFormat === 'PNG' && 'Best for images with transparency'}
+                          {outputFormat === 'PDF' && 'Best for document-style images'}
+                        </p>
+                      </div>
+                    </div>
+
                     {/* Resize Options */}
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
@@ -766,7 +1136,8 @@ export default function DocumentsPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Width (px)</label>
                             <input
                               type="number"
-                              placeholder="800"
+                              value={imageWidth}
+                              onChange={(e) => setImageWidth(parseInt(e.target.value) || 200)}
                               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
@@ -774,7 +1145,8 @@ export default function DocumentsPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">Height (px)</label>
                             <input
                               type="number"
-                              placeholder="600"
+                              value={imageHeight}
+                              onChange={(e) => setImageHeight(parseInt(e.target.value) || 200)}
                               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
@@ -826,9 +1198,193 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Process Button */}
-                  <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
-                    Process Images
+                  <button 
+                    onClick={async () => {
+                      if (uploadedFiles.length === 0) {
+                        alert('Please upload at least one image first.');
+                        return;
+                      }
+                      
+                      setIsProcessing(true);
+                      setProcessedFiles([]); // Clear previous results
+                      
+                      try {
+                        const processParams = {
+                          width: imageWidth,
+                          height: imageHeight,
+                          output_format: outputFormat,
+                          background_color: undefined, // Will be enhanced later with color picker
+                          maintain_aspect_ratio: false, // Will be enhanced later with checkbox
+                          max_file_size_kb: undefined // Will be enhanced later with size selector
+                        };
+                        
+                        if (uploadedFiles.length === 1) {
+                          // Process single image
+                          const result = await photoEditorService.processSingleImage(uploadedFiles[0], processParams);
+                          
+                          const processedFile = {
+                            id: 0,
+                            originalName: result.original_filename,
+                            processedName: result.processed_filename,
+                            format: result.format,
+                            dimensions: result.new_dimensions,
+                            size: result.processed_size_kb,
+                            url: result.thumbnail_url || result.download_url,
+                            downloadUrl: result.download_url,
+                            success: result.success,
+                            error: result.error
+                          };
+                          
+                          setProcessedFiles([processedFile]);
+                        } else {
+                          // Process batch of images
+                          const batchResult = await photoEditorService.processBatchImages(uploadedFiles, processParams);
+                          
+                          const processedFiles = batchResult.results.map((result, index) => ({
+                            id: index,
+                            originalName: result.original_filename,
+                            processedName: result.processed_filename,
+                            format: result.format,
+                            dimensions: result.new_dimensions,
+                            size: result.processed_size_kb,
+                            url: result.thumbnail_url || result.download_url,
+                            downloadUrl: result.download_url,
+                            success: result.success,
+                            error: result.error,
+                            batchDownloadUrl: batchResult.download_all_url
+                          }));
+                          
+                          setProcessedFiles(processedFiles);
+                        }
+                      } catch (error) {
+                        console.error('Photo processing failed:', error);
+                        alert(`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                        setProcessedFiles([]);
+                      } finally {
+                        setIsProcessing(false);
+                      }
+                    }}
+                    disabled={isProcessing || uploadedFiles.length === 0}
+                    className={`w-full py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
+                      isProcessing || uploadedFiles.length === 0
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Processing Images...</span>
+                      </>
+                    ) : (
+                      <span>Process Images ({uploadedFiles.length})</span>
+                    )}
                   </button>
+
+                  {/* Processing Progress */}
+                  {isProcessing && (
+                    <div className="bg-blue-50 rounded-xl p-4">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span className="text-blue-900 font-medium">Processing your images...</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                      </div>
+                      <p className="text-sm text-blue-700 mt-2">
+                        Resizing to {imageWidth}×{imageHeight}px and converting to {outputFormat} format...
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Processed Files Results */}
+                  {processedFiles.length > 0 && !isProcessing && (
+                    <div className="bg-green-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-green-900 mb-3 flex items-center">
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Processed Images ({processedFiles.length})
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {processedFiles.map((file) => (
+                          <div key={file.id} className="bg-white rounded-lg p-4 border border-green-200">
+                            <div className="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-4">
+                              {/* Thumbnail and File Info Container */}
+                              <div className="flex items-start space-x-4 flex-1 min-w-0">
+                                {/* Thumbnail */}
+                                <div className="flex-shrink-0">
+                                  <div className="w-16 h-16 bg-gray-100 rounded-lg border-2 border-green-200 flex items-center justify-center">
+                                    <Image className="h-8 w-8 text-green-600" />
+                                  </div>
+                                </div>
+                                
+                                {/* File Info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate" title={file.processedName}>
+                                    {file.processedName}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {file.dimensions} • {file.format} • {file.size} KB
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    Original: {file.originalName}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* Download Button */}
+                              <div className="flex-shrink-0 w-full sm:w-auto">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await photoEditorService.downloadImage(file.downloadUrl, file.processedName);
+                                    } catch (error) {
+                                      console.error('Download failed:', error);
+                                      alert('Download failed. Please try again.');
+                                    }
+                                  }}
+                                  className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Download All Button */}
+                      <div className="mt-4 pt-4 border-t border-green-200">
+                        <button 
+                          onClick={async () => {
+                            try {
+                              // Check if batch download URL is available
+                              const batchDownloadUrl = processedFiles[0]?.batchDownloadUrl;
+                              if (batchDownloadUrl) {
+                                await photoEditorService.downloadBatchZip(batchDownloadUrl, `processed_images_${new Date().toISOString().split('T')[0]}.zip`);
+                              } else {
+                                // Download files individually if no batch URL
+                                for (const file of processedFiles) {
+                                  if (file.success && file.downloadUrl) {
+                                    await photoEditorService.downloadImage(file.downloadUrl, file.processedName);
+                                    // Add small delay between downloads
+                                    await new Promise(resolve => setTimeout(resolve, 500));
+                                  }
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Batch download failed:', error);
+                              alert('Batch download failed. Please try downloading files individually.');
+                            }
+                          }}
+                          className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center space-x-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          <span>Download All ({processedFiles.length} files)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -885,8 +1441,23 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Convert Button */}
-                  <button className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold">
-                    Convert Files
+                  <button 
+                    onClick={processFormatConversion}
+                    disabled={isProcessing || uploadedFiles.length === 0}
+                    className={`w-full py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
+                      isProcessing || uploadedFiles.length === 0
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-red-600 text-white hover:bg-red-700'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Converting...</span>
+                      </>
+                    ) : (
+                      <span>Convert Files ({uploadedFiles.length} files)</span>
+                    )}
                   </button>
                 </div>
               )}
@@ -895,55 +1466,210 @@ export default function DocumentsPage() {
               {activeToolModal === 'pdf-tools' && (
                 <div className="space-y-6">
                   {/* Upload Area */}
-                  <div className="border-2 border-dashed border-green-300 rounded-xl p-8 text-center bg-green-50">
-                    <Combine className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload PDF Files</h3>
-                    <p className="text-gray-600 mb-4">Upload multiple files to combine into one PDF</p>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,image/*"
-                      className="hidden"
-                      id="pdf-upload"
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setUploadedFiles(Array.from(e.target.files))
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="pdf-upload"
-                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose Files
-                    </label>
-                    <p className="text-xs text-gray-500 mt-2">Supported: PDF, JPG, PNG (Max 50MB total)</p>
-                  </div>
+                  {uploadedFiles.length === 0 ? (
+                    <div className="border-2 border-dashed border-green-300 rounded-xl p-8 text-center bg-green-50">
+                      <Combine className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload PDF Files</h3>
+                      <p className="text-gray-600 mb-4">Upload files for PDF operations</p>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,image/*"
+                        className="hidden"
+                        id="pdf-upload"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setUploadedFiles(Array.from(e.target.files))
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="pdf-upload"
+                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose Files
+                      </label>
+                      <p className="text-xs text-gray-500 mt-2">Supported: PDF, JPG, PNG (Max 50MB total)</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">Selected Files ({uploadedFiles.length})</h3>
+                        <button
+                          onClick={() => setUploadedFiles([])}
+                          className="text-sm text-red-600 hover:text-red-700"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                              <FileText className="h-4 w-4 text-green-600" />
+                              <span className="text-sm text-gray-700">{file.name}</span>
+                              <span className="text-xs text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const newFiles = uploadedFiles.filter((_, i) => i !== index);
+                                setUploadedFiles(newFiles);
+                              }}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* PDF Operations */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button className="p-4 border border-green-300 rounded-xl hover:bg-green-50 text-center">
+                    <button 
+                      onClick={() => setPdfOperation('merge')}
+                      className={`p-4 border rounded-xl text-center transition-colors ${
+                        pdfOperation === 'merge' 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-green-300 hover:bg-green-50'
+                      }`}
+                    >
                       <Combine className="h-8 w-8 text-green-600 mx-auto mb-2" />
                       <span className="font-semibold text-gray-900">Combine PDFs</span>
                       <p className="text-sm text-gray-600 mt-1">Merge multiple files into one PDF</p>
                     </button>
-                    <button className="p-4 border border-green-300 rounded-xl hover:bg-green-50 text-center">
+                    <button 
+                      onClick={() => setPdfOperation('split')}
+                      className={`p-4 border rounded-xl text-center transition-colors ${
+                        pdfOperation === 'split' 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-green-300 hover:bg-green-50'
+                      }`}
+                    >
                       <Scissors className="h-8 w-8 text-green-600 mx-auto mb-2" />
                       <span className="font-semibold text-gray-900">Split PDF</span>
                       <p className="text-sm text-gray-600 mt-1">Extract pages from PDF</p>
                     </button>
-                    <button className="p-4 border border-green-300 rounded-xl hover:bg-green-50 text-center">
+                    <button 
+                      onClick={() => setPdfOperation('compress')}
+                      className={`p-4 border rounded-xl text-center transition-colors ${
+                        pdfOperation === 'compress' 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-green-300 hover:bg-green-50'
+                      }`}
+                    >
                       <Move className="h-8 w-8 text-green-600 mx-auto mb-2" />
                       <span className="font-semibold text-gray-900">Compress PDF</span>
                       <p className="text-sm text-gray-600 mt-1">Reduce file size</p>
                     </button>
                   </div>
 
+                  {/* Operation Options */}
+                  {pdfOperation === 'split' && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Split Options</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Pages per file</label>
+                          <input
+                            type="number"
+                            value={splitPagesPerFile}
+                            onChange={(e) => setSplitPagesPerFile(parseInt(e.target.value) || 1)}
+                            min="1"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {pdfOperation === 'compress' && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Compression Level</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {['low', 'medium', 'high'].map((level) => (
+                          <button
+                            key={level}
+                            onClick={() => setCompressionLevel(level as 'low' | 'medium' | 'high')}
+                            className={`p-3 border rounded-lg text-center transition-colors ${
+                              compressionLevel === level
+                                ? 'border-green-500 bg-green-50 text-green-700'
+                                : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                            }`}
+                          >
+                            <span className="text-sm font-medium capitalize">{level}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Process Button */}
-                  <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
-                    Process PDFs
+                  <button 
+                    onClick={processPDFTool}
+                    disabled={isProcessing || uploadedFiles.length === 0}
+                    className={`w-full py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
+                      isProcessing || uploadedFiles.length === 0
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Processing PDF...</span>
+                      </>
+                    ) : (
+                      <span>Process PDF ({uploadedFiles.length} files)</span>
+                    )}
                   </button>
+
+                  {/* Processing Progress */}
+                  {isProcessing && (
+                    <div className="bg-green-50 rounded-xl p-4">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+                        <span className="text-green-900 font-medium">Processing your PDF...</span>
+                      </div>
+                      <div className="w-full bg-green-200 rounded-full h-2">
+                        <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Results */}
+                  {processedFiles.length > 0 && (
+                    <div className="bg-green-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-green-900 mb-3 flex items-center">
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Processing Complete
+                      </h4>
+                      <div className="space-y-3">
+                        {processedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-6 w-6 text-green-600" />
+                              <div>
+                                <p className="font-medium text-gray-900">{file.processedName}</p>
+                                <p className="text-sm text-gray-600">
+                                  {file.format} • {(file.size / 1024).toFixed(1)} KB
+                                  {file.files && file.files.length > 0 && ` • ${file.files.length} files`}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => downloadFile(file.downloadUrl, file.processedName, 'pdf-tools')}
+                              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -958,38 +1684,174 @@ export default function DocumentsPage() {
 
                   {/* Signature Methods */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button className="p-6 border-2 border-purple-300 rounded-xl hover:bg-purple-50 text-center">
+                    <button 
+                      onClick={() => setSignatureType('draw')}
+                      className={`p-6 border-2 rounded-xl text-center transition-colors ${
+                        signatureType === 'draw' 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-purple-300 hover:bg-purple-50'
+                      }`}
+                    >
                       <PenTool className="h-8 w-8 text-purple-600 mx-auto mb-3" />
                       <span className="font-semibold text-gray-900 block">Draw</span>
                       <p className="text-sm text-gray-600 mt-1">Draw your signature with mouse or touch</p>
                     </button>
-                    <button className="p-6 border-2 border-purple-300 rounded-xl hover:bg-purple-50 text-center">
+                    <button 
+                      onClick={() => setSignatureType('text')}
+                      className={`p-6 border-2 rounded-xl text-center transition-colors ${
+                        signatureType === 'text' 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-purple-300 hover:bg-purple-50'
+                      }`}
+                    >
                       <FileText className="h-8 w-8 text-purple-600 mx-auto mb-3" />
                       <span className="font-semibold text-gray-900 block">Type</span>
                       <p className="text-sm text-gray-600 mt-1">Type your name in signature fonts</p>
                     </button>
-                    <button className="p-6 border-2 border-purple-300 rounded-xl hover:bg-purple-50 text-center">
+                    <button 
+                      onClick={() => setSignatureType('upload')}
+                      className={`p-6 border-2 rounded-xl text-center transition-colors ${
+                        signatureType === 'upload' 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-purple-300 hover:bg-purple-50'
+                      }`}
+                    >
                       <Upload className="h-8 w-8 text-purple-600 mx-auto mb-3" />
                       <span className="font-semibold text-gray-900 block">Upload</span>
                       <p className="text-sm text-gray-600 mt-1">Upload an image of your signature</p>
                     </button>
                   </div>
 
-                  {/* Drawing Canvas Area */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg h-40 flex items-center justify-center">
-                      <p className="text-gray-500">Signature canvas will appear here</p>
+                  {/* Signature Input Area */}
+                  {signatureType === 'text' && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Type Your Signature</h4>
+                      <input
+                        type="text"
+                        value={signatureText}
+                        onChange={(e) => setSignatureText(e.target.value)}
+                        placeholder="Enter your full name"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:ring-2 focus:ring-purple-500"
+                      />
+                      {signatureText && (
+                        <div className="mt-4 p-4 bg-white rounded-lg border">
+                          <p className="text-center text-2xl font-cursive text-purple-600">{signatureText}</p>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex justify-between items-center mt-4">
-                      <div className="flex space-x-2">
-                        <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Clear</button>
-                        <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Undo</button>
+                  )}
+
+                  {signatureType === 'upload' && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Upload Signature Image</h4>
+                      {uploadedFiles.length === 0 ? (
+                        <div className="border-2 border-dashed border-purple-300 rounded-xl p-6 text-center">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id="signature-upload"
+                            onChange={(e) => {
+                              if (e.target.files) {
+                                setUploadedFiles(Array.from(e.target.files))
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="signature-upload"
+                            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Choose Image
+                          </label>
+                          <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG (Max 5MB)</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {uploadedFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg">
+                              <div className="flex items-center space-x-2">
+                                <Image className="h-4 w-4 text-purple-600" />
+                                <span className="text-sm text-gray-700">{file.name}</span>
+                              </div>
+                              <button
+                                onClick={() => setUploadedFiles([])}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {signatureType === 'draw' && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Draw Your Signature</h4>
+                      <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg h-40 flex items-center justify-center">
+                        <p className="text-gray-500">Drawing canvas coming soon</p>
                       </div>
-                      <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                        Save Signature
-                      </button>
+                      <div className="flex justify-between items-center mt-4">
+                        <div className="flex space-x-2">
+                          <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Clear</button>
+                          <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Undo</button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Create Button */}
+                  <button 
+                    onClick={processSignature}
+                    disabled={isProcessing || (signatureType === 'text' && !signatureText.trim()) || (signatureType === 'upload' && uploadedFiles.length === 0)}
+                    className={`w-full py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
+                      isProcessing || (signatureType === 'text' && !signatureText.trim()) || (signatureType === 'upload' && uploadedFiles.length === 0)
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Creating Signature...</span>
+                      </>
+                    ) : (
+                      <span>Create Signature</span>
+                    )}
+                  </button>
+
+                  {/* Results */}
+                  {processedFiles.length > 0 && (
+                    <div className="bg-purple-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-purple-900 mb-3 flex items-center">
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Signature Created
+                      </h4>
+                      <div className="space-y-3">
+                        {processedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <PenTool className="h-6 w-6 text-purple-600" />
+                              <div>
+                                <p className="font-medium text-gray-900">{file.processedName}</p>
+                                <p className="text-sm text-gray-600">
+                                  {file.format} • {(file.size).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => downloadFile(file.downloadUrl, file.processedName, 'signature')}
+                              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1057,8 +1919,23 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Process Button */}
-                  <button className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 transition-colors font-semibold">
-                    Scan & Process
+                  <button 
+                    onClick={processDocumentScan}
+                    disabled={isProcessing || uploadedFiles.length === 0}
+                    className={`w-full py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
+                      isProcessing || uploadedFiles.length === 0
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-orange-600 text-white hover:bg-orange-700'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Scanning...</span>
+                      </>
+                    ) : (
+                      <span>Scan & Process ({uploadedFiles.length} files)</span>
+                    )}
                   </button>
                 </div>
               )}
@@ -1067,30 +1944,87 @@ export default function DocumentsPage() {
               {activeToolModal === 'size-optimizer' && (
                 <div className="space-y-6">
                   {/* Upload Area */}
-                  <div className="border-2 border-dashed border-teal-300 rounded-xl p-8 text-center bg-teal-50">
-                    <Scissors className="h-12 w-12 text-teal-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Files to Optimize</h3>
-                    <p className="text-gray-600 mb-4">Reduce file sizes without losing quality</p>
-                    <input
-                      type="file"
-                      multiple
-                      className="hidden"
-                      id="optimize-upload"
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setUploadedFiles(Array.from(e.target.files))
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="optimize-upload"
-                      className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 cursor-pointer"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose Files
-                    </label>
-                    <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, PDF, DOCX</p>
-                  </div>
+                  {uploadedFiles.length === 0 ? (
+                    <div className="border-2 border-dashed border-teal-300 rounded-xl p-8 text-center bg-teal-50">
+                      <Scissors className="h-12 w-12 text-teal-600 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Files to Optimize</h3>
+                      <p className="text-gray-600 mb-4">Reduce file sizes without losing quality</p>
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        id="optimize-upload"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setUploadedFiles(Array.from(e.target.files))
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="optimize-upload"
+                        className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 cursor-pointer"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose Files
+                      </label>
+                      <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, PDF, DOCX</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">Selected Files ({uploadedFiles.length})</h3>
+                        <div className="space-x-2">
+                          <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            id="optimize-upload-more"
+                            onChange={(e) => {
+                              if (e.target.files) {
+                                setUploadedFiles([...uploadedFiles, ...Array.from(e.target.files)])
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="optimize-upload-more"
+                            className="inline-flex items-center px-3 py-1 text-sm bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 cursor-pointer"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add More
+                          </label>
+                          <button
+                            onClick={() => setUploadedFiles([])}
+                            className="inline-flex items-center px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Clear All
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="relative bg-white border border-gray-200 rounded-lg p-3">
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-8 w-8 text-teal-600 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                                <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const newFiles = uploadedFiles.filter((_, i) => i !== index)
+                                  setUploadedFiles(newFiles)
+                                }}
+                                className="text-gray-400 hover:text-red-500"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Optimization Settings */}
                   <div className="bg-gray-50 rounded-xl p-4">
@@ -1124,35 +2058,77 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Optimize Button */}
-                  <button className="w-full bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 transition-colors font-semibold">
-                    Optimize Files
+                  <button 
+                    onClick={processSizeOptimization}
+                    disabled={isProcessing || uploadedFiles.length === 0}
+                    className={`w-full py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
+                      isProcessing || uploadedFiles.length === 0
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-teal-600 text-white hover:bg-teal-700'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Optimizing...</span>
+                      </>
+                    ) : (
+                      <span>Optimize Files ({uploadedFiles.length} files)</span>
+                    )}
                   </button>
+
+                  {/* Processed Files Display */}
+                  {processedFiles.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
+                        <h3 className="text-lg font-semibold text-green-800">Optimized Files Ready!</h3>
+                        {processedFiles.length > 1 && (
+                          <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium w-full sm:w-auto">
+                            Download All
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        {processedFiles.map((file, index) => (
+                          <div key={index} className="bg-white border border-green-200 rounded-lg p-3 sm:p-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                              <div className="flex-1">
+                                <div className="flex items-start sm:items-center space-x-3">
+                                  <Scissors className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5 sm:mt-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-gray-900 truncate text-sm sm:text-base">{file.processedName || file.originalName}</p>
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-xs sm:text-sm text-gray-600">
+                                      <span>Original: {file.originalSize ? `${(file.originalSize / 1024).toFixed(1)} KB` : 'N/A'}</span>
+                                      <span>Optimized: {file.size ? `${(file.size / 1024).toFixed(1)} KB` : 'N/A'}</span>
+                                      {file.compressionRatio && (
+                                        <span className="text-green-600 font-medium">
+                                          {file.compressionRatio}% smaller
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  if (file.downloadUrl) {
+                                    window.open(`http://localhost:8000/api/v1/${file.downloadUrl}`, '_blank');
+                                  }
+                                }}
+                                className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                              >
+                                Download
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Output Section */}
-              {processedFiles.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Processed Files</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {processedFiles.map((file, index) => (
-                      <div key={index} className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-8 w-8 text-blue-600" />
-                          <div>
-                            <p className="font-medium text-gray-900">{file.name}</p>
-                            <p className="text-sm text-gray-600">{file.size}</p>
-                          </div>
-                        </div>
-                        <button className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                          <Download className="h-4 w-4" />
-                          <span>Download</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
