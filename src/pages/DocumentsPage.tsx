@@ -1525,7 +1525,19 @@ export default function DocumentsPage() {
                           </div>
                         </div>
                         <button
-                          onClick={() => setUploadModalOpen(true)}
+                          onClick={() => {
+                            setActiveTab('manager')
+                            // Auto-select the document type based on the missing document
+                            const docTypeMapping: { [key: string]: string } = {
+                              'Final degree certificate from recognized university': 'degree_certificate',
+                              'Passport size photograph with white background': 'photograph',
+                              'Signature on white background': 'signature',
+                              'Valid passport': 'passport',
+                              'Other documents (if applicable)': 'other'
+                            }
+                            const mappedType = docTypeMapping[doc.name] || 'other'
+                            setSelectedDocumentType(mappedType)
+                          }}
                           className="ml-3 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors flex-shrink-0"
                         >
                           Upload
@@ -2842,137 +2854,90 @@ export default function DocumentsPage() {
 
                   {/* Scanner Options */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Show uploaded files preview in place of camera/upload options */}
-                    {uploadedFiles.length > 0 && !showCamera ? (
-                      <div className="md:col-span-2 bg-orange-50 rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-orange-900">Selected Images ({uploadedFiles.length})</h4>
+                    {/* Camera Interface - Shows camera or button */}
+                    {showCamera ? (
+                      <div className="md:col-span-2 bg-gray-900 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-semibold text-white">Camera Capture</h4>
                           <button
-                            onClick={() => setUploadedFiles([])}
-                            className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                            onClick={stopCamera}
+                            className="text-gray-400 hover:text-white"
                           >
-                            Clear All
+                            <X className="h-5 w-5" />
                           </button>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {uploadedFiles.map((file, index) => {
-                            const imageUrl = URL.createObjectURL(file);
-                            return (
-                              <div key={index} className="relative bg-white rounded-lg p-2">
-                                <div className="aspect-square bg-gray-100 rounded-lg mb-2 overflow-hidden">
-                                  <img 
-                                    src={imageUrl}
-                                    alt={file.name}
-                                    className="w-full h-full object-cover"
-                                    onLoad={() => {
-                                      URL.revokeObjectURL(imageUrl);
-                                    }}
-                                  />
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    const newFiles = uploadedFiles.filter((_, i) => i !== index);
-                                    setUploadedFiles(newFiles);
-                                  }}
-                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                                <p className="text-xs text-gray-600 truncate">{file.name}</p>
-                                <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
-                              </div>
-                            );
-                          })}
+                        <div className="relative">
+                          <video
+                            id="camera-video"
+                            autoPlay
+                            playsInline
+                            muted
+                            ref={(video) => {
+                              if (video && cameraStream) {
+                                video.srcObject = cameraStream;
+                                video.onloadedmetadata = () => {
+                                  console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
+                                  video.play().catch(e => console.log('Video play error:', e));
+                                };
+                                video.oncanplay = () => {
+                                  console.log('Video can play');
+                                };
+                              }
+                            }}
+                            className="w-full rounded-lg"
+                          />
+                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('🔴 Capture button clicked - starting capture process');
+                                await capturePhoto();
+                              }}
+                              className="bg-orange-600 text-white p-4 rounded-full hover:bg-orange-700 transition-colors shadow-lg border-2 border-white"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              <Camera className="h-6 w-6" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      <>
-                        {/* Camera Interface - Shows camera or button */}
-                        {showCamera ? (
-                          <div className="md:col-span-2 bg-gray-900 rounded-xl p-4">
-                            <div className="flex items-center justify-between mb-4">
-                              <h4 className="font-semibold text-white">Camera Capture</h4>
-                              <button
-                                onClick={stopCamera}
-                                className="text-gray-400 hover:text-white"
-                              >
-                                <X className="h-5 w-5" />
-                              </button>
-                            </div>
-                            <div className="relative">
-                              <video
-                                id="camera-video"
-                                autoPlay
-                                playsInline
-                                muted
-                                ref={(video) => {
-                                  if (video && cameraStream) {
-                                    video.srcObject = cameraStream;
-                                    video.onloadedmetadata = () => {
-                                      console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
-                                      video.play().catch(e => console.log('Video play error:', e));
-                                    };
-                                    video.oncanplay = () => {
-                                      console.log('Video can play');
-                                    };
-                                  }
-                                }}
-                                className="w-full rounded-lg"
-                              />
-                              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('🔴 Capture button clicked - starting capture process');
-                                    await capturePhoto();
-                                  }}
-                                  className="bg-orange-600 text-white p-4 rounded-full hover:bg-orange-700 transition-colors shadow-lg border-2 border-white"
-                                  style={{ pointerEvents: 'auto' }}
-                                >
-                                  <Camera className="h-6 w-6" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={startCamera}
-                            className="p-6 border-2 border-orange-300 rounded-xl hover:bg-orange-50 text-center transition-colors"
-                          >
-                            <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
-                            <span className="font-semibold text-gray-900 block mb-2">Use Camera</span>
-                            <p className="text-sm text-gray-600">Scan documents using your device camera</p>
-                          </button>
-                        )}
-                        
-                        {/* Upload Images - Only show when camera is not active */}
-                        {!showCamera && (
-                          <div className="p-6 border-2 border-dashed border-orange-300 rounded-xl text-center bg-orange-50">
-                            <Upload className="h-12 w-12 text-orange-600 mx-auto mb-4" />
-                            <span className="font-semibold text-gray-900 block mb-2">Upload Images</span>
-                            <input
-                              type="file"
-                              multiple
-                              accept="image/*"
-                              className="hidden"
-                              id="scanner-upload"
-                              onChange={(e) => {
-                                if (e.target.files) {
-                                  setUploadedFiles(Array.from(e.target.files))
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor="scanner-upload"
-                              className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer"
-                            >
-                              Choose Images
-                            </label>
-                          </div>
-                        )}
-                      </>
+                      <button 
+                        onClick={startCamera}
+                        className="p-6 border-2 border-orange-300 rounded-xl hover:bg-orange-50 text-center transition-colors"
+                      >
+                        <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                        <span className="font-semibold text-gray-900 block mb-2">Use Camera</span>
+                        <p className="text-sm text-gray-600">Scan documents using your device camera</p>
+                      </button>
+                    )}
+                    
+                    {/* Upload Images - Only show when camera is not active */}
+                    {!showCamera && (
+                      <div className="p-6 border-2 border-dashed border-orange-300 rounded-xl text-center bg-orange-50">
+                        <Upload className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                        <span className="font-semibold text-gray-900 block mb-2">Upload Images</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          className="hidden"
+                          id="scanner-upload"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              setUploadedFiles(Array.from(e.target.files))
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="scanner-upload"
+                          className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer"
+                        >
+                          Choose Images
+                        </label>
+                      </div>
                     )}
                   </div>
 
@@ -3000,6 +2965,52 @@ export default function DocumentsPage() {
                   </div>
 
 
+                  {/* Uploaded Files Preview */}
+                  {uploadedFiles.length > 0 && !showCamera && (
+                    <div className="bg-orange-50 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-orange-900">Selected Images ({uploadedFiles.length})</h4>
+                        <button
+                          onClick={() => setUploadedFiles([])}
+                          className="text-orange-600 hover:text-orange-800 text-sm"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {uploadedFiles.map((file, index) => {
+                          const imageUrl = URL.createObjectURL(file);
+                          return (
+                            <div key={index} className="relative bg-white rounded-lg p-2">
+                              <div className="aspect-square bg-gray-100 rounded-lg mb-2 overflow-hidden">
+                                <img 
+                                  src={imageUrl}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                  onLoad={() => {
+                                    // Clean up the object URL after image loads
+                                    setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
+                                  }}
+                                  onError={() => {
+                                    console.error('Failed to load image preview for:', file.name);
+                                    URL.revokeObjectURL(imageUrl);
+                                  }}
+                                />
+                              </div>
+                              <p className="text-xs text-gray-700 truncate">{file.name}</p>
+                              <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                              <button
+                                onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Process Button */}
                   <button 

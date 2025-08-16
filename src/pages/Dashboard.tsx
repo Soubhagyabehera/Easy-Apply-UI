@@ -201,7 +201,7 @@ export default function Dashboard() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search Govt jobs by title, organization, or qualification..."
+                placeholder="Search Govt Jobs by Title or Org..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => searchTerm.trim().length > 2 && setShowSuggestions(true)}

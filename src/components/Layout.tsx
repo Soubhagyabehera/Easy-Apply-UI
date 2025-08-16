@@ -44,8 +44,8 @@ export default function Layout({ children }: LayoutProps) {
                   <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div className="hidden xs:block">
-                  <span className="text-lg sm:text-xl font-bold text-gray-900">Applyze</span>
-                  <span className="text-xs text-gray-500 block">Portal</span>
+                  <span className="text-base sm:text-lg font-bold text-gray-900">Applyze</span>
+                  <span className="text-xs text-gray-500 block">Job Portal</span>
                 </div>
               </Link>
             </div>
@@ -88,7 +88,20 @@ export default function Layout({ children }: LayoutProps) {
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                     className="flex items-center space-x-1 sm:space-x-2 p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
                   >
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                    {user?.picture ? (
+                      <img
+                        src={user.picture}
+                        alt={user.full_name || 'User'}
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-blue-200"
+                        onError={(e) => {
+                          // Fallback to default avatar if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center ${user?.picture ? 'hidden' : ''}`}>
                       <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
                     <span className="hidden lg:block text-sm font-medium">{user?.full_name || 'User'}</span>
