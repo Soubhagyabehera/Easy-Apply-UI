@@ -242,34 +242,39 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Job Status Navigation */}
+      {/* Job Status Navigation - Mobile Responsive Grid */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="border-b border-gray-100">
-            <div className="flex overflow-x-auto scrollbar-hide">
-              {jobStatusTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setJobStatus(tab.id as any)}
-                  className={`flex-shrink-0 min-w-fit px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-all ${
+          {/* Mobile: 2x2 Grid, Desktop: Horizontal Tabs */}
+          <div className="grid grid-cols-2 sm:flex sm:border-b sm:border-gray-100">
+            {jobStatusTabs.map((tab, index) => (
+              <button
+                key={tab.id}
+                onClick={() => setJobStatus(tab.id as any)}
+                className={`relative p-3 sm:px-6 sm:py-4 text-center transition-all border-r border-b sm:border-b-2 sm:border-r-0 sm:flex-1 ${
+                  index % 2 === 1 ? 'border-r-0 sm:border-r' : ''
+                } ${
+                  index >= 2 ? 'border-b-0 sm:border-b-2' : ''
+                } ${
+                  jobStatus === tab.id
+                    ? 'bg-blue-50 text-blue-600 border-blue-200 sm:border-blue-500 sm:border-b-blue-500'
+                    : 'text-gray-600 border-gray-200 hover:bg-gray-50 sm:border-transparent sm:hover:text-gray-700'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center sm:space-x-2">
+                  <span className="text-xs sm:text-sm font-medium leading-tight sm:whitespace-nowrap">
+                    {tab.name}
+                  </span>
+                  <span className={`inline-block mt-1 sm:mt-0 px-2 py-1 rounded-full text-xs font-semibold ${
                     jobStatus === tab.id
-                      ? 'border-blue-500 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-center space-x-1 sm:space-x-2">
-                    <span className="whitespace-nowrap">{tab.name}</span>
-                    <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs ${
-                      jobStatus === tab.id
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
           
           {/* Enhanced Search & Filters */}
