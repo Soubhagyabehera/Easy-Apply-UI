@@ -199,13 +199,14 @@ export default function Dashboard() {
               <span className="hidden sm:inline">Secure Document Storage</span>
               <span className="sm:hidden">Storage</span>
             </Link>
-            <button 
-              className="px-4 py-3 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+            <Link 
+              to={isAuthenticated ? '/auto-apply' : '/signin'}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
             >
               <Zap className="h-4 w-4" />
               <span className="hidden sm:inline">One-Click Auto Apply</span>
               <span className="sm:hidden">Auto Apply</span>
-            </button>
+            </Link>
           </div>
         </div>
       </div>
