@@ -26,9 +26,9 @@ export default function Layout({ children }: LayoutProps) {
 
   const navigationItems = [
     { path: '/', label: 'Dashboard', icon: Home },
-    { path: '/applications', label: 'My Applications', icon: FileText },
-    { path: '/auto-apply', label: 'Auto Apply', icon: Zap },
     { path: '/documents', label: isAuthenticated ? 'Documents' : 'Document Tools', icon: Folder },
+    { path: '/auto-apply', label: 'Auto Apply', icon: Zap },
+    { path: '/applications', label: 'My Applications', icon: FileText },
   ]
 
   return (

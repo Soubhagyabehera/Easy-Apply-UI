@@ -168,45 +168,44 @@ export default function Dashboard() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 leading-relaxed">
-              From finding government jobs to applying and tracking — with smart document tools and auto-apply — everything in one click.
-            </h1>
-            <div className="flex flex-wrap justify-center gap-2 mt-5">
-              <button 
-                onClick={() => {
-                  const jobsSection = document.getElementById('jobs-section');
-                  if (jobsSection) {
-                    jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center space-x-1.5"
-              >
-                <Search className="h-3.5 w-3.5" />
-                <span>Find Jobs</span>
-              </button>
-              <Link 
-                to="/documents?tab=tools"
-                className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors flex items-center space-x-1.5"
-              >
-                <Camera className="h-3.5 w-3.5" />
-                <span>Tools</span>
-              </Link>
-              <button 
-                onClick={() => {
-                  if (isAuthenticated) {
-                    window.location.href = '/documents?tab=manager';
-                  } else {
-                    window.location.href = '/signin';
-                  }
-                }}
-                className="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors flex items-center space-x-1.5"
-              >
-                <Shield className="h-3.5 w-3.5" />
-                <span>Storage</span>
-              </button>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 max-w-4xl mx-auto">
+            <button 
+              onClick={() => {
+                const jobsSection = document.getElementById('jobs-section');
+                if (jobsSection) {
+                  jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}
+              className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">Find Government Jobs</span>
+              <span className="sm:hidden">Find Jobs</span>
+            </button>
+            <Link 
+              to="/documents?tab=tools"
+              className="px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+            >
+              <Camera className="h-4 w-4" />
+              <span className="hidden sm:inline">Smart Document Tools</span>
+              <span className="sm:hidden">Tools</span>
+            </Link>
+            <Link 
+              to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
+              className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+            >
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Secure Document Storage</span>
+              <span className="sm:hidden">Storage</span>
+            </Link>
+            <button 
+              className="px-4 py-3 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+            >
+              <Zap className="h-4 w-4" />
+              <span className="hidden sm:inline">One-Click Auto Apply</span>
+              <span className="sm:hidden">Auto Apply</span>
+            </button>
           </div>
         </div>
       </div>
@@ -216,10 +215,9 @@ export default function Dashboard() {
         {/* Search and Filters */}
         <div className="mb-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Government Jobs</h2>
-            <p className="text-gray-600 mt-1">
-              <span className="font-semibold text-blue-600">{filteredJobs.length}</span> jobs available
-            </p>
+            <h2 className="text-lg font-semibold text-gray-900">
+              <span className="text-blue-600">{filteredJobs.length}</span> Govt Jobs Available
+            </h2>
           </div>
           
           {/* Status Tabs */}
