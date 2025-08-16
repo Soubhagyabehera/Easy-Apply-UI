@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, UserPlus, LogIn, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase, Filter, ChevronDown, ChevronUp, Zap, Shield, Sparkles, Camera } from 'lucide-react'
+import { Search, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, LogIn, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase, ChevronDown, ChevronUp, Zap, Shield, Sparkles, Camera } from 'lucide-react'
 import { jobService } from '../services/jobService'
 import { Job, JobCategory } from '../types/job'
 import { useAuth } from '../contexts/AuthContext'
@@ -165,39 +165,34 @@ export default function Dashboard() {
   // Stats removed - not currently used in the UI
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Compact Features Section */}
-      <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-500">
-        <div className="bg-white/5 backdrop-blur-sm py-1.5 sm:py-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3 px-4 sm:px-6">
-            {/* Features Row - Left Side */}
-            <div className="flex gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide">
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border-b border-blue-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 leading-relaxed">
+              From finding government jobs to applying and tracking — with smart document tools and auto-apply — everything in one click.
+            </h1>
+            <div className="flex flex-wrap justify-center gap-2 mt-5">
               <button 
                 onClick={() => {
-                  const jobsSection = document.getElementById('available-jobs-section');
+                  const jobsSection = document.getElementById('jobs-section');
                   if (jobsSection) {
                     jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
                 }}
-                className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center space-x-1.5"
               >
-                <div className="p-0.5 bg-green-500 rounded">
-                  <Search className="h-2.5 w-2.5 text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="text-xs font-medium text-white whitespace-nowrap">Find Jobs</div>
-                </div>
+                <Search className="h-3.5 w-3.5" />
+                <span>Find Jobs</span>
               </button>
-              
-              <Link to="/documents?tab=tools" className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group">
-                <div className="p-0.5 bg-purple-500 rounded">
-                  <Camera className="h-2.5 w-2.5 text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="text-xs font-medium text-white whitespace-nowrap">Format Docs</div>
-                </div>
+              <Link 
+                to="/documents?tab=tools"
+                className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors flex items-center space-x-1.5"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <span>Tools</span>
               </Link>
-              
               <button 
                 onClick={() => {
                   if (isAuthenticated) {
@@ -206,409 +201,288 @@ export default function Dashboard() {
                     window.location.href = '/signin';
                   }
                 }}
-                className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group"
+                className="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors flex items-center space-x-1.5"
               >
-                <div className="p-0.5 bg-orange-500 rounded">
-                  <Shield className="h-2.5 w-2.5 text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="text-xs font-medium text-white whitespace-nowrap">Secure Storage</div>
-                </div>
+                <Shield className="h-3.5 w-3.5" />
+                <span>Storage</span>
               </button>
-              
-              <button 
-                onClick={() => {
-                  if (isAuthenticated) {
-                    window.location.href = '/auto-apply';
-                  } else {
-                    window.location.href = '/signin';
-                  }
-                }}
-                className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group"
-              >
-                <div className="p-0.5 bg-red-500 rounded">
-                  <Zap className="h-2.5 w-2.5 text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="text-xs font-medium text-white whitespace-nowrap">Auto Apply</div>
-                </div>
-              </button>
-            </div>
-            
-            {/* CTA - Right Side */}
-            <div className="flex-shrink-0">
-              {isAuthenticated ? (
-                <div className="flex gap-2">
-                  <Link
-                    to="/documents"
-                    className="inline-flex items-center space-x-1 bg-white text-blue-600 px-2.5 py-1 rounded-md font-medium hover:bg-blue-50 transition-all duration-200 text-xs shadow-sm"
-                  >
-                    <FileText className="h-3 w-3" />
-                    <span className="hidden sm:inline">Manage Docs</span>
-                    <span className="sm:hidden">Docs</span>
-                  </Link>
-                  <Link
-                    to="/auto-apply"
-                    className="inline-flex items-center space-x-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2.5 py-1 rounded-md font-medium hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 text-xs shadow-sm"
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    <span className="hidden sm:inline">Auto-Apply</span>
-                    <span className="sm:hidden">Auto</span>
-                  </Link>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  <Link
-                    to="/signup"
-                    className="inline-flex items-center space-x-1 bg-white text-blue-600 px-2.5 py-1 rounded-md font-medium hover:bg-blue-50 transition-all duration-200 text-xs shadow-sm"
-                  >
-                    <UserPlus className="h-3 w-3" />
-                    <span>Get Started Free</span>
-                  </Link>
-                  <Link
-                    to="/signin"
-                    className="text-blue-100 hover:text-white text-xs font-medium transition-colors"
-                  >
-                    <span className="underline">Sign In</span>
-                  </Link>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Compact Header Section */}
-      <div className="w-full">
-        <div className="bg-white border-b border-gray-200">
-          {/* Row 1: Tabs + Search */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-3 px-4 sm:px-6 py-2">
-            {/* Job Status Tabs - Left Side */}
-            <div className="flex-1 lg:flex-none">
-              <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-                {jobStatusTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setJobStatus(tab.id as any)}
-                    className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-200 ${
-                      jobStatus === tab.id
-                        ? 'bg-blue-600 text-white rounded-md'
-                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md'
-                    }`}
-                  >
-                    <span className="hidden sm:inline">{tab.name}</span>
-                    <span className="sm:hidden">{tab.shortName}</span>
-                    <span className="ml-1 text-xs opacity-90">({tab.count})</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Search Bar - Right Side */}
-            <div className="relative flex-shrink-0 w-full lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search jobs..."
-                className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search and Filters */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Government Jobs</h2>
+            <p className="text-gray-600 mt-1">
+              <span className="font-semibold text-blue-600">{filteredJobs.length}</span> jobs available
+            </p>
           </div>
           
-          {/* Row 2: Core Filters + Categories */}
-          <div className="px-4 sm:px-6 pb-2 space-y-1.5">
-            {/* Core Filters Row */}
-            <div className="flex flex-col sm:flex-row items-stretch gap-2">
-              <select 
-                className="w-full sm:flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                value={selectedFilters.location}
-                onChange={(e) => setSelectedFilters({...selectedFilters, location: e.target.value})}
+          {/* Status Tabs */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {jobStatusTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setJobStatus(tab.id as any)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  jobStatus === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
-                <option value="">📍 Location</option>
-                <option value="delhi">Delhi</option>
-                <option value="mumbai">Mumbai</option>
-                <option value="bangalore">Bangalore</option>
-                <option value="pan-india">Pan India</option>
-              </select>
-              
-              <select 
-                className="w-full sm:flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                value={selectedFilters.department}
-                onChange={(e) => setSelectedFilters({...selectedFilters, department: e.target.value})}
-              >
-                <option value="">🏢 Organization</option>
-                {uniqueOrganizations.slice(0, 8).map(org => (
-                  <option key={org} value={org}>{org}</option>
-                ))}
-              </select>
-              
-              <select 
-                className="w-full sm:flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                value={selectedFilters.qualification}
-                onChange={(e) => setSelectedFilters({...selectedFilters, qualification: e.target.value})}
-              >
-                <option value="">🎓 Qualification</option>
-                <option value="graduate">Graduate</option>
-                <option value="post-graduate">Post Graduate</option>
-                <option value="12th">12th Pass</option>
-                <option value="10th">10th Pass</option>
-              </select>
-              
-              {/* Advanced Filters & Search Button */}
-              <div className="flex gap-2 w-full sm:w-auto">
-                <button
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className={`flex-1 sm:flex-none px-3 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center space-x-1 ${
-                    showAdvancedFilters ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <Filter className="h-4 w-4" />
-                  <span className="hidden sm:inline">More</span>
-                </button>
-                
-                <button
-                  onClick={fetchGovernmentJobs}
-                  disabled={loading}
-                  className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center space-x-1"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
-                  <span className="hidden sm:inline">{loading ? 'Loading...' : 'Search'}</span>
-                </button>
-              </div>
-            </div>
+                <span className="hidden sm:inline">{tab.name}</span>
+                <span className="sm:hidden">{tab.shortName}</span>
+                <span className="ml-2 text-xs opacity-75">({tab.count})</span>
+              </button>
+            ))}
+          </div>
+          {/* Main Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <select 
+              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+              value={selectedFilters.jobType}
+              onChange={(e) => setSelectedFilters({...selectedFilters, jobType: e.target.value})}
+            >
+              <option value="">Job Type</option>
+              <option value="central">Central Government</option>
+              <option value="state">State Government</option>
+              <option value="psu">PSU</option>
+              <option value="autonomous">Autonomous Organization</option>
+            </select>
             
-            {/* Categories Scroll Row */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 font-medium flex-shrink-0">Categories:</span>
-              <div className="flex overflow-x-auto scrollbar-hide gap-1.5">
-                {jobCategories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => {
-                      setSelectedCategory(selectedCategory === category.id ? null : category.id)
-                      setSearchTerm('')
-                    }}
-                    className={`flex-shrink-0 inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                      selectedCategory === category.id 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-blue-50'
-                    }`}
-                  >
-                    <span>{category.icon}</span>
-                    <span className="whitespace-nowrap">{category.name}</span>
-                    <span className={`px-1 py-0.5 rounded-full text-xs ${
-                      selectedCategory === category.id 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>{category.jobCount}</span>
-                  </button>
-                ))}
-                {selectedCategory && (
-                  <button
-                    onClick={() => setSelectedCategory(null)}
-                    className="flex-shrink-0 inline-flex items-center space-x-1 px-2.5 py-1 bg-red-100 text-red-600 rounded-full text-xs font-medium hover:bg-red-200 transition-colors"
-                  >
-                    <span>Clear</span>
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
+            <select 
+              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+              value={selectedFilters.qualification}
+              onChange={(e) => setSelectedFilters({...selectedFilters, qualification: e.target.value})}
+            >
+              <option value="">Qualification</option>
+              <option value="graduate">Graduate</option>
+              <option value="post-graduate">Post Graduate</option>
+              <option value="12th">12th Pass</option>
+              <option value="10th">10th Pass</option>
+              <option value="diploma">Diploma</option>
+              <option value="phd">PhD</option>
+            </select>
+            
+            <select 
+              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+              value={selectedFilters.experience}
+              onChange={(e) => setSelectedFilters({...selectedFilters, experience: e.target.value})}
+            >
+              <option value="">Employment Type</option>
+              <option value="permanent">Permanent</option>
+              <option value="contract">Contract</option>
+              <option value="internship">Internship</option>
+              <option value="temporary">Temporary</option>
+            </select>
+            
+            <button
+              onClick={fetchGovernmentJobs}
+              disabled={loading}
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-2"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              <span>{loading ? 'Searching...' : 'Search'}</span>
+            </button>
           </div>
           
-          {/* Advanced Filters - Collapsed by Default */}
-          {showAdvancedFilters && (
-            <div className="px-2 sm:px-3 pb-3 border-t border-gray-200">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-3">
+          {/* Advanced Filters */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+            >
+              <span>Advanced Filters</span>
+              {showAdvancedFilters ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </button>
+            
+            {showAdvancedFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3 p-4 bg-gray-50 rounded-lg">
                 <select 
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  value={selectedFilters.jobType}
-                  onChange={(e) => setSelectedFilters({...selectedFilters, jobType: e.target.value})}
+                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  value={selectedFilters.location}
+                  onChange={(e) => setSelectedFilters({...selectedFilters, location: e.target.value})}
                 >
-                  <option value="">🏛️ Job Type</option>
-                  <option value="central">Central Govt</option>
-                  <option value="state">State Govt</option>
-                  <option value="psu">PSU</option>
+                  <option value="">Location</option>
+                  <option value="delhi">Delhi</option>
+                  <option value="mumbai">Mumbai</option>
+                  <option value="bangalore">Bangalore</option>
+                  <option value="pan-india">Pan India</option>
                 </select>
                 
                 <select 
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  value={selectedFilters.department}
+                  onChange={(e) => setSelectedFilters({...selectedFilters, department: e.target.value})}
+                >
+                  <option value="">Organization</option>
+                  {uniqueOrganizations.slice(0, 8).map(org => (
+                    <option key={org} value={org}>{org}</option>
+                  ))}
+                </select>
+                
+                <select 
+                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
                   value={selectedFilters.salary}
                   onChange={(e) => setSelectedFilters({...selectedFilters, salary: e.target.value})}
                 >
-                  <option value="">💰 Salary</option>
-                  <option value="0-25000">₹0-25K</option>
-                  <option value="25000-50000">₹25-50K</option>
-                  <option value="50000-100000">₹50K-1L</option>
-                  <option value="100000+">₹1L+</option>
+                  <option value="">Salary Range</option>
+                  <option value="0-25000">₹0 - ₹25,000</option>
+                  <option value="25000-50000">₹25,000 - ₹50,000</option>
+                  <option value="50000-100000">₹50,000 - ₹1,00,000</option>
+                  <option value="100000+">₹1,00,000+</option>
                 </select>
                 
                 <select 
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  value={selectedFilters.experience}
-                  onChange={(e) => setSelectedFilters({...selectedFilters, experience: e.target.value})}
-                >
-                  <option value="">💼 Experience</option>
-                  <option value="fresher">Fresher</option>
-                  <option value="1-3">1-3 years</option>
-                  <option value="3-5">3-5 years</option>
-                  <option value="5+">5+ years</option>
-                </select>
-                
-                <select 
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
                   value={selectedFilters.ageLimit}
                   onChange={(e) => setSelectedFilters({...selectedFilters, ageLimit: e.target.value})}
                 >
-                  <option value="">👤 Age Limit</option>
-                  <option value="18-25">18-25</option>
-                  <option value="18-30">18-30</option>
-                  <option value="18-35">18-35</option>
-                  <option value="no-limit">No Limit</option>
+                  <option value="">Age Limit</option>
+                  <option value="18-25">18 - 25 years</option>
+                  <option value="18-30">18 - 30 years</option>
+                  <option value="18-35">18 - 35 years</option>
+                  <option value="no-limit">No Age Limit</option>
                 </select>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Jobs List */}
-      <div className="w-full">
-        <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 sm:p-6 shadow-lg border-b border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 mb-0.5">
-                Available Jobs
-              </h2>
-              <p className="text-sm text-gray-600">
-                <span className="font-semibold text-blue-600">{filteredJobs.length}</span> jobs found
-                {selectedCategory && <span className="ml-2 text-xs">in {jobCategories.find(c => c.id === selectedCategory)?.name}</span>}
-              </p>
-            </div>
+            )}
           </div>
-        
+          
+          {/* Categories */}
+          <div className="flex flex-wrap gap-2">
+            {jobCategories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => {
+                  setSelectedCategory(selectedCategory === category.id ? null : category.id)
+                  setSearchTerm('')
+                }}
+                className={`inline-flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === category.id 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span>{category.icon}</span>
+                <span>{category.name}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  selectedCategory === category.id 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white text-gray-600'
+                }`}>{category.jobCount}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Jobs Grid */}
+        <div id="jobs-section">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-              <div className="flex items-center space-x-2">
-                <div className="text-red-600">
-                  <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5" />
-                </div>
-                <p className="text-red-700 text-sm sm:text-base">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <p className="text-red-700">{error}</p>
               </div>
             </div>
           )}
         
           {loading ? (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-12 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
-              <p className="text-gray-600 text-sm sm:text-base">Discovering government jobs using AI...</p>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading jobs...</p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredJobs.length === 0 ? (
-                <div className="col-span-full bg-white rounded-lg border border-gray-200 p-6 text-center">
-                  <div className="bg-blue-50 p-3 rounded-full w-fit mx-auto mb-3">
-                    <Building className="h-10 w-10 text-blue-600" />
+                <div className="col-span-full text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Building className="h-8 w-8 text-gray-400" />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900 mb-1">No jobs found</h3>
-                  <p className="text-gray-600 text-sm">Try adjusting your filters or search terms.</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No jobs found</h3>
+                  <p className="text-gray-600">Try adjusting your filters or search terms.</p>
                 </div>
               ) : (
                 filteredJobs.slice(0, 24).map((job) => (
-                  <div key={job.id} className="group bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all duration-200 overflow-hidden">
-                    {/* Compact Header */}
-                    <div className="relative bg-gradient-to-r from-blue-500 to-indigo-500 p-2 text-white">
-                      {/* Status Badge */}
-                      <div className={`absolute top-1 right-1 px-1.5 py-0.5 rounded text-xs font-medium ${
-                        job.status === 'admit-card' 
-                          ? 'bg-orange-100 text-orange-700' 
-                          : job.status === 'results' 
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {job.status === 'admit-card' ? 'Card' : job.status === 'results' ? 'Results' : 'Active'}
+                  <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 h-full">
+                    {/* Job Title */}
+                    <div className="mb-3">
+                      <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-1">
+                        {job.title}
+                      </h3>
+                      <p className="text-xs text-gray-600 truncate">
+                        {job.organization || job.company}
+                      </p>
+                    </div>
+                    
+                    {/* Job Details Grid */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-1 text-red-600">
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          <span className="font-medium truncate">
+                            {job.apply_last_date || job.application_deadline || job.last_date || 'Check notification'}
+                          </span>
+                        </div>
+                        <div className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          job.job_type === 'contract' || job.employment_type === 'contract'
+                            ? 'bg-orange-100 text-orange-700'
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {job.job_type === 'contract' || job.employment_type === 'contract' ? 'Contract' : 'Permanent'}
+                        </div>
                       </div>
                       
-                      <div className="flex items-center space-x-1.5 pr-14">
-                        <div className="p-0.5 bg-white/20 rounded">
-                          <Building2 className="h-3 w-3 text-white" />
+                      <div className="flex items-center justify-between text-xs text-gray-600">
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <span>{job.vacancies || 'Multiple'} posts</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-blue-100 truncate">
-                            {job.organization || job.company}
-                          </p>
+                        <div className="flex items-center space-x-1">
+                          <TrendingUp className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <span className="font-medium">{job.fee ? `₹${job.fee}` : 'Free'}</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="p-2.5 space-y-1.5">
-                      {/* Job Title */}
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-sm mb-0.5 line-clamp-2 leading-tight group-hover:text-blue-900 transition-colors">
-                          {job.title}
-                        </h3>
-                      </div>
-                      
-                      {/* Compact Key Information */}
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-1.5">
-                          <MapPin className="h-3 w-3 text-green-600 flex-shrink-0" />
-                          <p className="text-xs text-gray-600 truncate">
-                            {job.location || 'Multiple Locations'}
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center space-x-1.5">
-                          <Clock className="h-3 w-3 text-red-600 flex-shrink-0" />
-                          <p className="text-xs text-red-600 font-medium truncate">
-                            {job.apply_last_date || job.application_deadline || job.last_date || 'Check notification'}
-                          </p>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-1.5 text-xs">
-                          <div className="flex items-center space-x-1">
-                            <Users className="h-3 w-3 text-blue-600 flex-shrink-0" />
-                            <span className="text-gray-600 truncate">{job.vacancies || 'Multiple'}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <TrendingUp className="h-3 w-3 text-purple-600 flex-shrink-0" />
-                            <span className="text-gray-600 truncate">{job.fee ? `₹${job.fee}` : 'Free'}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Compact Inline Buttons */}
-                      <div className="flex space-x-1.5 pt-1">
-                        <button
-                          onClick={() => {
-                            setSelectedJob(job)
-                            setShowJobDetails(true)
-                          }}
-                          className="flex-1 px-2 py-1 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
-                        >
-                          <Eye className="h-3 w-3" />
-                          <span>View</span>
-                        </button>
-                        <a
-                          href={(() => {
-                            const link = job.apply_link || job.apply_url || job.career_url || '#';
-                            if (link === '#') return link;
-                            return link.startsWith('http://') || link.startsWith('https://') ? link : `https://${link}`;
-                          })()}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-1"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          <span>Apply</span>
-                        </a>
-                      </div>
+                    {/* Action Buttons */}
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedJob(job)
+                          setShowJobDetails(true)
+                        }}
+                        className="flex-1 px-2 py-1.5 border border-gray-200 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>View</span>
+                      </button>
+                      <a
+                        href={(() => {
+                          const link = job.apply_link || job.apply_url || job.career_url || '#';
+                          if (link === '#') return link;
+                          return link.startsWith('http://') || link.startsWith('https://') ? link : `https://${link}`;
+                        })()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 px-2 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        <span>Apply</span>
+                      </a>
                     </div>
                   </div>
                 ))
@@ -617,7 +491,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-
 
       {/* Job Details Modal */}
       {showJobDetails && selectedJob && (
