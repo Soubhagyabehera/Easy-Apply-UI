@@ -42,6 +42,8 @@ export default function DocumentsPage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])  
   const [processedFiles, setProcessedFiles] = useState<any[]>([])  
   const [isProcessing, setIsProcessing] = useState(false)  
+  const [showCamera, setShowCamera] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)  
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);  
   const [outputFormat, setOutputFormat] = useState<'JPG' | 'PNG' | 'PDF'>('JPG')  
@@ -401,40 +403,244 @@ export default function DocumentsPage() {
     }
   };
 
-  const processDocumentScan = async () => {
-    if (uploadedFiles.length === 0) {
-      alert('Please upload at least one image file first.');
-      return;
+  // Camera functionality
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } // Use back camera if available
+      });
+      setCameraStream(stream);
+      setShowCamera(true);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert('Could not access camera. Please check permissions or use file upload instead.');
     }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = async () => {
+    console.log('=== CAPTURE PHOTO STARTED ===');
+    
+    try {
+      if (!cameraStream) {
+        console.error('No camera stream available');
+        alert('Camera not available. Please try again.');
+        return;
+      }
+      
+      const video = document.getElementById('camera-video') as HTMLVideoElement;
+      if (!video) {
+        console.error('Camera video element not found');
+        alert('Camera video not found. Please restart camera.');
+        return;
+      }
+
+      console.log('Video state:', {
+        videoWidth: video.videoWidth,
+        videoHeight: video.videoHeight,
+        readyState: video.readyState,
+        paused: video.paused,
+        ended: video.ended,
+        currentTime: video.currentTime
+      });
+
+      // Force video to play if paused
+      if (video.paused) {
+        try {
+          await video.play();
+          console.log('Video resumed playing');
+        } catch (e) {
+          console.error('Failed to resume video:', e);
+        }
+      }
+
+      // Wait for video to be ready with multiple checks
+      let retryCount = 0;
+      const maxRetries = 10;
+      
+      while ((video.videoWidth === 0 || video.videoHeight === 0 || video.readyState < 2) && retryCount < maxRetries) {
+        console.log(`Video not ready, retry ${retryCount + 1}/${maxRetries}...`);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        retryCount++;
+      }
+
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.error('Video still not ready after retries');
+        alert('Camera video not ready. Please try again.');
+        return;
+      }
+
+      console.log('Creating canvas for capture...');
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      if (!context) {
+        console.error('Failed to get canvas context');
+        alert('Canvas not supported. Please try a different browser.');
+        return;
+      }
+
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
+      
+      // Draw the current video frame
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      console.log('Video frame drawn to canvas');
+      
+      // Test canvas data to ensure it's not empty
+      const imageData = context.getImageData(0, 0, Math.min(10, canvas.width), Math.min(10, canvas.height));
+      const hasData = imageData.data.some(pixel => pixel !== 0);
+      console.log('Canvas has image data:', hasData);
+      
+      if (!hasData) {
+        throw new Error('Canvas appears to be empty - video frame may not have been captured properly');
+      }
+      
+      // Convert to blob with timeout and better error handling
+      const blob = await new Promise<Blob | null>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Canvas toBlob timeout after 5 seconds'));
+        }, 5000);
+        
+        try {
+          canvas.toBlob((result) => {
+            clearTimeout(timeout);
+            console.log('toBlob callback executed, result:', result ? 'success' : 'null');
+            if (result) {
+              resolve(result);
+            } else {
+              reject(new Error('Canvas toBlob returned null - browser may not support JPEG encoding'));
+            }
+          }, 'image/jpeg', 0.9);
+          console.log('toBlob method called successfully');
+        } catch (err) {
+          clearTimeout(timeout);
+          console.error('toBlob method threw error:', err);
+          reject(err);
+        }
+      });
+      
+      if (blob) {
+        const timestamp = Date.now();
+        const fileName = `captured-${timestamp}.jpg`;
+        
+        // Create file object with proper constructor check
+        let file: File;
+        try {
+          if (typeof File !== 'undefined' && File.prototype && File.prototype.constructor === File) {
+            file = new File([blob], fileName, { type: 'image/jpeg' });
+          } else {
+            // Fallback for environments where File constructor is not available
+            file = new Blob([blob], { type: 'image/jpeg' }) as File;
+            Object.defineProperty(file, 'name', { value: fileName, writable: false });
+            Object.defineProperty(file, 'lastModified', { value: timestamp, writable: false });
+          }
+        } catch (fileError) {
+          console.error('File constructor error:', fileError);
+          // Create a blob with file-like properties
+          file = Object.assign(blob, {
+            name: fileName,
+            lastModified: timestamp
+          }) as File;
+        }
+        
+        console.log('Photo captured successfully:', {
+          name: file.name || fileName,
+          size: file.size,
+          type: file.type
+        });
+        
+        // Add to uploaded files
+        setUploadedFiles(prev => {
+          const newFiles = [...prev, file];
+          console.log('Files updated, total count:', newFiles.length);
+          return newFiles;
+        });
+        
+        // Show success message
+        alert(`✅ Photo captured successfully!\nFile: ${file.name}\nSize: ${(file.size / 1024).toFixed(1)} KB`);
+        
+        // Stop camera immediately
+        console.log('Stopping camera...');
+        stopCamera();
+        console.log('=== CAPTURE COMPLETE ===');
+        
+      } else {
+        console.error('Failed to create blob from canvas');
+        alert('❌ Failed to capture photo. Please try again.');
+      }
+      
+    } catch (error) {
+      console.error('DETAILED ERROR during photo capture:', error);
+      console.error('Error stack:', (error as Error).stack);
+      console.error('Error message:', (error as Error).message);
+      alert(`❌ Error capturing photo: ${(error as Error).message}. Please try again.`);
+    }
+  };
+
+  const processDocumentScan = async () => {
+    if (uploadedFiles.length === 0) return;
     
     setIsProcessing(true);
     setProcessedFiles([]);
     
     try {
-      const result = await documentScannerService.scanToPDF(uploadedFiles, enhanceImages, autoCrop);
+      console.log('Starting document scan with files:', uploadedFiles.map(f => f.name));
       
-      if (result && result.success) {
+      // Get enhancement options from the Document Scanner modal
+      const scannerModal = document.querySelector('[data-modal="document-scanner"]');
+      const autoCrop = (scannerModal?.querySelector('input[type="checkbox"]:nth-of-type(1)') as HTMLInputElement)?.checked ?? true;
+      const enhanceContrast = (scannerModal?.querySelector('input[type="checkbox"]:nth-of-type(2)') as HTMLInputElement)?.checked ?? true;
+      const convertToGrayscale = (scannerModal?.querySelector('input[type="checkbox"]:nth-of-type(3)') as HTMLInputElement)?.checked ?? false;
+      const ocrExtraction = (scannerModal?.querySelector('input[type="checkbox"]:nth-of-type(4)') as HTMLInputElement)?.checked ?? false;
+      
+      const enhancementLevel = enhanceContrast ? 'medium' : 'light';
+      const outputFormat = 'PDF';
+      
+      console.log('Scan options:', { enhancementLevel, autoCrop, outputFormat });
+      
+      const result = await documentScannerService.scanToPDF(uploadedFiles, {
+        outputFormat,
+        enhancementLevel,
+        autoCrop,
+        pageSize: 'A4'
+      });
+      
+      console.log('Scan result:', result);
+      
+      if (result.success && result.scan_id) {
         const processedFile = {
-          id: 0,
-          originalName: (result as any).original_filename || 'scanned_document',
-          processedName: (result as any).processed_filename || 'scanned_document.pdf',
-          format: 'PDF',
-          size: (result as any).file_size_kb || 0,
-          url: (result as any).download_url || '',
-          downloadUrl: (result as any).download_url || '',
+          processedName: result.output_filename || 'scanned_document.pdf',
+          format: result.output_format || 'PDF',
+          size: (result.output_size_mb || 0) * 1024, // Convert MB to KB
+          url: result.download_url || '',
+          downloadUrl: result.scan_id,
           success: result.success,
-          pages: (result as any).total_pages || uploadedFiles.length
+          pages: result.input_files || uploadedFiles.length
         };
         setProcessedFiles([processedFile]);
+        console.log('Processed file added:', processedFile);
+      } else {
+        throw new Error(result.error || 'Scanning failed - no scan ID returned');
       }
     } catch (error) {
-      console.error('Document scan failed:', error);
-      alert(`Document scan failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Document scanning failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Scanning failed: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }
   };
-
   const processFormatConversion = async () => {
     if (uploadedFiles.length === 0) {
       alert('Please upload at least one file first.');
@@ -2095,11 +2301,11 @@ export default function DocumentsPage() {
                       </h4>
                       <div className="space-y-3">
                         {processedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <FileText className="h-6 w-6 text-red-600" />
-                              <div>
-                                <p className="font-medium text-gray-900">{file.processedName}</p>
+                          <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg space-y-3 sm:space-y-0">
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                              <FileText className="h-6 w-6 text-red-600 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 truncate">{file.processedName}</p>
                                 <p className="text-sm text-gray-600">
                                   {file.format} • {(file.size).toFixed(1)} KB
                                 </p>
@@ -2107,7 +2313,7 @@ export default function DocumentsPage() {
                             </div>
                             <button
                               onClick={() => downloadFile(file.downloadUrl, file.processedName, 'converter')}
-                              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                              className="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex-shrink-0"
                             >
                               Download
                             </button>
@@ -2372,11 +2578,11 @@ export default function DocumentsPage() {
                       </h4>
                       <div className="space-y-3">
                         {processedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <FileText className="h-6 w-6 text-green-600" />
-                              <div>
-                                <p className="font-medium text-gray-900">{file.processedName}</p>
+                          <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg space-y-3 sm:space-y-0">
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                              <FileText className="h-6 w-6 text-green-600 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 truncate">{file.processedName}</p>
                                 <p className="text-sm text-gray-600">
                                   {file.format} • {(file.size / 1024).toFixed(1)} KB
                                   {file.files && file.files.length > 0 && ` • ${file.files.length} files`}
@@ -2385,7 +2591,7 @@ export default function DocumentsPage() {
                             </div>
                             <button
                               onClick={() => downloadFile(file.downloadUrl, file.processedName, 'pdf-tools')}
-                              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                              className="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex-shrink-0"
                             >
                               Download
                             </button>
@@ -2407,7 +2613,7 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Signature Methods */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button 
                       onClick={() => setSignatureType('draw')}
                       className={`p-6 border-2 rounded-xl text-center transition-colors ${
@@ -2419,28 +2625,6 @@ export default function DocumentsPage() {
                       <PenTool className="h-8 w-8 text-purple-600 mx-auto mb-3" />
                       <span className="font-semibold text-gray-900 block">Draw</span>
                       <p className="text-sm text-gray-600 mt-1">Draw your signature with mouse or touch</p>
-                      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-                        <button
-                          onClick={() => setSignatureType('text')}
-                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            signatureType === 'text'
-                              ? 'bg-white text-purple-600 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Type Text
-                        </button>
-                        <button
-                          onClick={() => setSignatureType('draw')}
-                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            signatureType === 'draw'
-                              ? 'bg-white text-purple-600 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Draw Signature
-                        </button>
-                      </div>
                     </button>
                     <button 
                       onClick={() => setSignatureType('text')}
@@ -2612,11 +2796,11 @@ export default function DocumentsPage() {
                       </h4>
                       <div className="space-y-3">
                         {processedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <PenTool className="h-6 w-6 text-purple-600" />
-                              <div>
-                                <p className="font-medium text-gray-900">{file.processedName}</p>
+                          <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg space-y-3 sm:space-y-0">
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                              <PenTool className="h-6 w-6 text-purple-600 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 truncate">{file.processedName}</p>
                                 <p className="text-sm text-gray-600">
                                   {file.format} • {(file.size).toFixed(1)} KB
                                 </p>
@@ -2624,7 +2808,7 @@ export default function DocumentsPage() {
                             </div>
                             <button
                               onClick={() => downloadFile(file.downloadUrl, file.processedName, 'signature')}
-                              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                              className="w-full sm:w-auto bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex-shrink-0"
                             >
                               Download
                             </button>
@@ -2638,7 +2822,7 @@ export default function DocumentsPage() {
 
               {/* Document Scanner Tool */}
               {activeToolModal === 'document-scanner' && (
-                <div className="space-y-6">
+                <div className="space-y-6" data-modal="document-scanner">
                   <div className="text-center">
                     <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Document Scanner</h3>
@@ -2647,7 +2831,10 @@ export default function DocumentsPage() {
 
                   {/* Scanner Options */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <button className="p-6 border-2 border-orange-300 rounded-xl hover:bg-orange-50 text-center">
+                    <button 
+                      onClick={startCamera}
+                      className="p-6 border-2 border-orange-300 rounded-xl hover:bg-orange-50 text-center transition-colors"
+                    >
                       <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
                       <span className="font-semibold text-gray-900 block mb-2">Use Camera</span>
                       <p className="text-sm text-gray-600">Scan documents using your device camera</p>
@@ -2699,6 +2886,104 @@ export default function DocumentsPage() {
                     </div>
                   </div>
 
+                  {/* Camera Interface */}
+                  {showCamera && (
+                    <div className="bg-gray-900 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-white">Camera Capture</h4>
+                        <button
+                          onClick={stopCamera}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <video
+                          id="camera-video"
+                          autoPlay
+                          playsInline
+                          muted
+                          ref={(video) => {
+                            if (video && cameraStream) {
+                              video.srcObject = cameraStream;
+                              video.onloadedmetadata = () => {
+                                console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
+                                video.play().catch(e => console.log('Video play error:', e));
+                              };
+                              video.oncanplay = () => {
+                                console.log('Video can play');
+                              };
+                            }
+                          }}
+                          className="w-full rounded-lg"
+                        />
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('🔴 Capture button clicked - starting capture process');
+                              await capturePhoto();
+                            }}
+                            className="bg-orange-600 text-white p-4 rounded-full hover:bg-orange-700 transition-colors shadow-lg border-2 border-white"
+                            style={{ pointerEvents: 'auto' }}
+                          >
+                            <Camera className="h-6 w-6" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Uploaded Files Preview */}
+                  {uploadedFiles.length > 0 && !showCamera && (
+                    <div className="bg-orange-50 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-orange-900">Selected Images ({uploadedFiles.length})</h4>
+                        <button
+                          onClick={() => setUploadedFiles([])}
+                          className="text-orange-600 hover:text-orange-800 text-sm"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {uploadedFiles.map((file, index) => {
+                          const imageUrl = URL.createObjectURL(file);
+                          return (
+                            <div key={index} className="relative bg-white rounded-lg p-2">
+                              <div className="aspect-square bg-gray-100 rounded-lg mb-2 overflow-hidden">
+                                <img 
+                                  src={imageUrl}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                  onLoad={() => {
+                                    // Clean up the object URL after image loads
+                                    setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
+                                  }}
+                                  onError={() => {
+                                    console.error('Failed to load image preview for:', file.name);
+                                    URL.revokeObjectURL(imageUrl);
+                                  }}
+                                />
+                              </div>
+                              <p className="text-xs text-gray-700 truncate">{file.name}</p>
+                              <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                              <button
+                                onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Process Button */}
                   <button 
                     onClick={processDocumentScan}
@@ -2718,6 +3003,38 @@ export default function DocumentsPage() {
                       <span>Scan & Process ({uploadedFiles.length} files)</span>
                     )}
                   </button>
+
+                  {/* Results */}
+                  {processedFiles.length > 0 && (
+                    <div className="bg-orange-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-orange-900 mb-3 flex items-center">
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Scanning Complete
+                      </h4>
+                      <div className="space-y-3">
+                        {processedFiles.map((file, index) => (
+                          <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-white rounded-lg space-y-3 sm:space-y-0">
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                              <FileText className="h-6 w-6 text-orange-600 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 truncate">{file.processedName}</p>
+                                <p className="text-sm text-gray-600">
+                                  {file.format} • {(file.size).toFixed(1)} KB
+                                  {file.pages && ` • ${file.pages} pages`}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => downloadFile(file.downloadUrl, file.processedName, 'scanner')}
+                              className="w-full sm:w-auto bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium flex-shrink-0"
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

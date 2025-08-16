@@ -8,18 +8,16 @@ import { apiClient } from '../config/api';
 export interface ScanResponse {
   success: boolean;
   scan_id?: string;
-  original_filename?: string;
-  processed_filename?: string;
-  scan_type?: string;
-  enhancement_applied?: boolean;
-  auto_crop_applied?: boolean;
-  total_pages?: number;
-  file_size_kb?: number;
+  output_filename?: string;
+  output_format?: string;
+  input_files?: number;
+  enhancement_level?: string;
+  auto_crop?: boolean;
+  page_size?: string;
+  input_size_mb?: number;
+  output_size_mb?: number;
   processing_time_ms?: number;
   download_url?: string;
-  thumbnail_url?: string;
-  opencv_available?: boolean;
-  enhancement_method?: string;
   error?: string;
 }
 
@@ -40,31 +38,46 @@ export interface BatchScanResponse {
 
 class DocumentScannerService {
   /**
-   * Scan images to PDF
+   * Scan images to PDF with enhancement options
    */
   async scanToPDF(
     files: File[],
-    enhanceImages: boolean = true,
-    autoCrop: boolean = true
-  ): Promise<ScanResponse | BatchScanResponse> {
+    options: {
+      outputFormat?: string;
+      enhancementLevel?: string;
+      autoCrop?: boolean;
+      pageSize?: string;
+    } = {}
+  ): Promise<ScanResponse> {
     try {
       const formData = new FormData();
       files.forEach((file) => {
         formData.append('files', file);
       });
-      formData.append('enhance_images', enhanceImages.toString());
-      formData.append('auto_crop', autoCrop.toString());
+      formData.append('output_format', options.outputFormat || 'PDF');
+      formData.append('enhancement_level', options.enhancementLevel || 'medium');
+      formData.append('auto_crop', (options.autoCrop !== false).toString());
+      formData.append('page_size', options.pageSize || 'A4');
 
-      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/scan`, {
+      console.log('Sending request to:', `${apiClient.defaults.baseURL}/document-scanner/scan-to-pdf`);
+      console.log('FormData contents:', Array.from(formData.entries()));
+
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/scan-to-pdf`, {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('API Response:', result);
+      return result;
     } catch (error) {
       console.error('Document scan failed:', error);
       throw error;
@@ -75,17 +88,17 @@ class DocumentScannerService {
    * Enhance existing scanned images
    */
   async enhanceScan(
-    files: File[],
-    enhancementLevel: string = 'medium'
-  ): Promise<ScanResponse | BatchScanResponse> {
+    file: File,
+    enhancementLevel: string = 'medium',
+    outputFormat: string = 'PNG'
+  ): Promise<ScanResponse> {
     try {
       const formData = new FormData();
-      files.forEach((file) => {
-        formData.append('files', file);
-      });
+      formData.append('file', file);
       formData.append('enhancement_level', enhancementLevel);
+      formData.append('output_format', outputFormat);
 
-      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/enhance`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/enhance-scan`, {
         method: 'POST',
         body: formData,
       });
