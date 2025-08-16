@@ -3,6 +3,8 @@
  * Handles secure storage and automatic formatting of user documents for job applications
  */
 
+import { apiClient, API_ENDPOINTS } from '../config/api'
+
 // Types and Interfaces
 export interface UserDocument {
   document_id: string;
@@ -86,13 +88,11 @@ export interface DocumentStats {
 }
 
 class DocumentManagerService {
-  private baseURL = '/api/v1/document-manager';
-
   /**
    * Get authentication headers with JWT token
    */
   private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('auth_token') || 'demo_token';
+    const token = localStorage.getItem('access_token') || 'demo_token';
     return {
       'Authorization': `Bearer ${token}`,
     };
@@ -107,21 +107,16 @@ class DocumentManagerService {
       formData.append('file', file);
       formData.append('document_type', documentType);
 
-      const response = await fetch(`${this.baseURL}/upload`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: formData,
+      const response = await apiClient.post(API_ENDPOINTS.documentManager.upload, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Upload failed: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       console.error('Document upload error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Upload failed');
     }
   }
 
@@ -130,23 +125,11 @@ class DocumentManagerService {
    */
   async getUserDocuments(): Promise<DocumentListResponse> {
     try {
-      const response = await fetch(`${this.baseURL}/documents`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders(),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to fetch documents: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      const response = await apiClient.get(API_ENDPOINTS.documentManager.documents);
+      return response.data;
+    } catch (error: any) {
       console.error('Get documents error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Failed to fetch documents');
     }
   }
 
@@ -155,23 +138,11 @@ class DocumentManagerService {
    */
   async deleteDocument(documentId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${this.baseURL}/documents/${documentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders(),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Delete failed: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      const response = await apiClient.delete(API_ENDPOINTS.documentManager.document(documentId));
+      return response.data;
+    } catch (error: any) {
       console.error('Delete document error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Delete failed');
     }
   }
 
@@ -183,24 +154,14 @@ class DocumentManagerService {
     jobRequirements?: Record<string, DocumentRequirements>
   ): Promise<JobDocumentBundle> {
     try {
-      const response = await fetch(`${this.baseURL}/format-for-job/${jobId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders(),
-        },
-        body: jobRequirements ? JSON.stringify(jobRequirements) : undefined,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Formatting failed: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      const response = await apiClient.post(
+        API_ENDPOINTS.documentManager.formatForJob(jobId),
+        jobRequirements || {}
+      );
+      return response.data;
+    } catch (error: any) {
       console.error('Format documents error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Formatting failed');
     }
   }
 
@@ -209,18 +170,13 @@ class DocumentManagerService {
    */
   async downloadDocumentBundle(batchId: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseURL}/download-bundle/${batchId}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Download failed: ${response.statusText}`);
-      }
+      const response = await apiClient.get(
+        API_ENDPOINTS.documentManager.downloadBundle(batchId),
+        { responseType: 'blob' }
+      );
 
       // Create blob and download
-      const blob = await response.blob();
+      const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -229,9 +185,9 @@ class DocumentManagerService {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Download bundle error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Download failed');
     }
   }
 
@@ -240,22 +196,11 @@ class DocumentManagerService {
    */
   async getDocumentTypes(): Promise<DocumentTypesResponse> {
     try {
-      const response = await fetch(`${this.baseURL}/document-types`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to fetch document types: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      const response = await apiClient.get(API_ENDPOINTS.documentManager.documentTypes);
+      return response.data;
+    } catch (error: any) {
       console.error('Get document types error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Failed to fetch document types');
     }
   }
 
@@ -264,22 +209,11 @@ class DocumentManagerService {
    */
   async getJobDocumentRequirements(jobId: string): Promise<JobRequirementsResponse> {
     try {
-      const response = await fetch(`${this.baseURL}/job-requirements/${jobId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to fetch job requirements: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      const response = await apiClient.get(`/document-manager/job-requirements/${jobId}`);
+      return response.data;
+    } catch (error: any) {
       console.error('Get job requirements error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Failed to fetch job requirements');
     }
   }
 
@@ -288,23 +222,11 @@ class DocumentManagerService {
    */
   async getDocumentStats(): Promise<DocumentStats> {
     try {
-      const response = await fetch(`${this.baseURL}/stats`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders(),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to fetch stats: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      const response = await apiClient.get(API_ENDPOINTS.documentManager.stats);
+      return response.data;
+    } catch (error: any) {
       console.error('Get stats error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Failed to fetch stats');
     }
   }
 
@@ -313,21 +235,11 @@ class DocumentManagerService {
    */
   async checkHealth(): Promise<{ success: boolean; service: string; status: string }> {
     try {
-      const response = await fetch(`${this.baseURL}/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Health check failed: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
+      const response = await apiClient.get('/document-manager/health');
+      return response.data;
+    } catch (error: any) {
       console.error('Health check error:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Health check failed');
     }
   }
 
