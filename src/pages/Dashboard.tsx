@@ -146,77 +146,77 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 space-y-6">
-      {/* Hero Section */}
+      {/* Hero Section - Compact Mobile Design */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white rounded-2xl py-4 sm:py-6 md:py-8">
-          <div className="text-center mb-4 sm:mb-6">
-            <h1 className="text-lg sm:text-2xl md:text-4xl font-bold mb-2 sm:mb-3 leading-tight">
+        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white rounded-t-2xl sm:rounded-2xl py-3 sm:py-6">
+          <div className="text-center mb-3 sm:mb-4">
+            <h1 className="text-base sm:text-2xl md:text-4xl font-bold mb-1 sm:mb-3 leading-tight px-2">
               India's Only Complete Govt Job Platform
             </h1>
-            <p className="text-sm sm:text-lg md:text-xl text-blue-100 mb-3 sm:mb-4 px-2">
+            <p className="text-xs sm:text-lg md:text-xl text-blue-100 mb-2 sm:mb-4 px-2">
               Find jobs <span className="font-semibold text-yellow-300">AND</span> prepare every document in minutes
             </p>
           </div>
           
-          {/* Value Proposition Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6 max-w-4xl mx-auto px-2">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1.5 mb-1">
-                <div className="p-1 bg-green-500 rounded-md flex-shrink-0">
-                  <Search className="h-3 w-3 text-white" />
+          {/* Value Proposition Cards - Compact on Mobile */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3 mb-3 sm:mb-4 max-w-4xl mx-auto px-2">
+            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
+              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
+                <div className="p-0.5 sm:p-1 bg-green-500 rounded flex-shrink-0">
+                  <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
                 </div>
                 <h3 className="font-semibold text-xs truncate">Find All Jobs</h3>
               </div>
-              <p className="text-xs text-blue-100 leading-tight">Clean, updated list with direct apply links</p>
+              <p className="text-xs text-blue-100 leading-tight hidden sm:block">Clean, updated list with direct apply links</p>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1.5 mb-1">
-                <div className="p-1 bg-purple-500 rounded-md flex-shrink-0">
-                  <Camera className="h-3 w-3 text-white" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
+              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
+                <div className="p-0.5 sm:p-1 bg-purple-500 rounded flex-shrink-0">
+                  <Camera className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
                 </div>
                 <h3 className="font-semibold text-xs truncate">Format Documents</h3>
               </div>
-              <p className="text-xs text-blue-100 leading-tight">Edit, resize photos & docs to exact standards</p>
+              <p className="text-xs text-blue-100 leading-tight hidden sm:block">Edit, resize photos & docs to exact standards</p>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1.5 mb-1">
-                <div className="p-1 bg-orange-500 rounded-md flex-shrink-0">
-                  <Shield className="h-3 w-3 text-white" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
+              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
+                <div className="p-0.5 sm:p-1 bg-orange-500 rounded flex-shrink-0">
+                  <Shield className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
                 </div>
                 <h3 className="font-semibold text-xs truncate">Secure Storage</h3>
               </div>
-              <p className="text-xs text-blue-100 leading-tight">Access your documents anytime, anywhere</p>
+              <p className="text-xs text-blue-100 leading-tight hidden sm:block">Access your documents anytime, anywhere</p>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1.5 mb-1">
-                <div className="p-1 bg-red-500 rounded-md flex-shrink-0">
-                  <Zap className="h-3 w-3 text-white" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
+              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
+                <div className="p-0.5 sm:p-1 bg-red-500 rounded flex-shrink-0">
+                  <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
                 </div>
                 <h3 className="font-semibold text-xs truncate">One-Click Format</h3>
               </div>
-              <p className="text-xs text-blue-100 leading-tight">No more rejections for wrong size/format</p>
+              <p className="text-xs text-blue-100 leading-tight hidden sm:block">No more rejections for wrong size/format</p>
             </div>
           </div>
           
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 px-2">
+          {/* CTA Buttons - Primary/Secondary Layout */}
+          <div className="space-y-2 sm:flex sm:flex-row sm:justify-center sm:gap-3 sm:space-y-0 px-2">
             {isAuthenticated ? (
               <>
                 <Link
                   to="/documents"
-                  className="bg-white text-blue-600 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-xs sm:text-sm"
+                  className="w-full sm:w-auto bg-white text-blue-600 px-4 sm:px-6 py-2.5 sm:py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
                 >
-                  <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <FileText className="h-4 w-4" />
                   <span>Manage Documents</span>
                 </Link>
                 <Link
                   to="/auto-apply"
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-xs sm:text-sm"
+                  className="w-full sm:w-auto bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 sm:px-6 py-2.5 sm:py-2.5 rounded-lg font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
                 >
-                  <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <Sparkles className="h-4 w-4" />
                   <span>Auto-Apply (Coming Soon)</span>
                 </Link>
               </>
@@ -224,17 +224,16 @@ export default function Dashboard() {
               <>
                 <Link
                   to="/signup"
-                  className="bg-white text-blue-600 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-xs sm:text-sm"
+                  className="w-full sm:w-auto bg-white text-blue-600 px-6 py-3 sm:py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
                 >
-                  <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <UserPlus className="h-4 w-4" />
                   <span>Get Started Free</span>
                 </Link>
                 <Link
                   to="/signin"
-                  className="bg-gradient-to-r from-blue-800 to-indigo-800 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:from-blue-900 hover:to-indigo-900 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-xs sm:text-sm"
+                  className="w-full sm:w-auto text-center text-blue-100 hover:text-white text-sm font-medium py-2 transition-colors"
                 >
-                  <LogIn className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Sign In</span>
+                  Already have an account? <span className="underline">Sign In</span>
                 </Link>
               </>
             )}
@@ -243,8 +242,8 @@ export default function Dashboard() {
       </div>
 
       {/* Job Status Navigation - Mobile Responsive Grid */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 -mt-3 sm:mt-0">
+        <div className="bg-white rounded-t-none rounded-b-2xl sm:rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           {/* Mobile: 2x2 Grid, Desktop: Horizontal Tabs */}
           <div className="grid grid-cols-2 sm:flex sm:border-b sm:border-gray-100">
             {jobStatusTabs.map((tab, index) => (
