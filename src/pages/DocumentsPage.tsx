@@ -1202,7 +1202,7 @@ export default function DocumentsPage() {
                     <Folder className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                     <p className="text-gray-500 mb-4">No documents uploaded yet</p>
                     <button
-                      onClick={() => setUploadModalOpen(true)}
+                      onClick={() => setActiveTab('manager')}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
                       Upload First Document
