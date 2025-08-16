@@ -309,7 +309,7 @@ export default function Dashboard() {
                   <Calendar className="h-5 w-5" />
                 </div>
                 <div className="text-left">
-                  <div className="font-semibold">Active Applications</div>
+                  <div className="font-semibold">Active Jobs</div>
                   <div className="text-sm text-gray-600">Apply now</div>
                 </div>
               </div>

@@ -134,170 +134,199 @@ export default function Dashboard() {
     }
   ]
 
-  // Job status tabs
+  // Job status tabs with responsive names
   const jobStatusTabs = [
-    { id: 'active', name: 'Active Applications', count: governmentJobs.filter(job => !job.status || job.status === 'active').length },
-    { id: 'admit-card', name: 'Admit Card Released', count: governmentJobs.filter(job => job.status === 'admit-card').length },
-    { id: 'results', name: 'Results Declared', count: governmentJobs.filter(job => job.status === 'results').length },
-    { id: 'all', name: 'All Jobs', count: governmentJobs.length }
+    { 
+      id: 'active', 
+      name: 'Active Jobs', 
+      shortName: 'Active',
+      count: governmentJobs.filter(job => !job.status || job.status === 'active').length 
+    },
+    { 
+      id: 'admit-card', 
+      name: 'Admit Card Released', 
+      shortName: 'Admit Card',
+      count: governmentJobs.filter(job => job.status === 'admit-card').length 
+    },
+    { 
+      id: 'results', 
+      name: 'Results Declared', 
+      shortName: 'Results',
+      count: governmentJobs.filter(job => job.status === 'results').length 
+    },
+    { 
+      id: 'all', 
+      name: 'All Jobs', 
+      shortName: 'All',
+      count: governmentJobs.length 
+    }
   ]
 
   // Stats removed - not currently used in the UI
 
   return (
-    <div className="min-h-screen bg-gray-50 space-y-6">
-      {/* Hero Section - Compact Mobile Design */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white rounded-t-2xl sm:rounded-2xl py-3 sm:py-6">
-          <div className="text-center mb-3 sm:mb-4">
-            <h1 className="text-base sm:text-2xl md:text-4xl font-bold mb-1 sm:mb-3 leading-tight px-2">
-              India's Only Complete Govt Job Platform
-            </h1>
-            <p className="text-xs sm:text-lg md:text-xl text-blue-100 mb-2 sm:mb-4 px-2">
-              Find jobs <span className="font-semibold text-yellow-300">AND</span> prepare every document in minutes
-            </p>
-          </div>
-          
-          {/* Value Proposition Cards - Compact on Mobile */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3 mb-3 sm:mb-4 max-w-4xl mx-auto px-2">
-            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
-                <div className="p-0.5 sm:p-1 bg-green-500 rounded flex-shrink-0">
-                  <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Compact Features Section */}
+      <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-500">
+        <div className="bg-white/5 backdrop-blur-sm py-1.5 sm:py-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3 px-4 sm:px-6">
+            {/* Features Row - Left Side */}
+            <div className="flex gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide">
+              <button 
+                onClick={() => {
+                  const jobsSection = document.getElementById('available-jobs-section');
+                  if (jobsSection) {
+                    jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group"
+              >
+                <div className="p-0.5 bg-green-500 rounded">
+                  <Search className="h-2.5 w-2.5 text-white" />
                 </div>
-                <h3 className="font-semibold text-xs truncate">Find All Jobs</h3>
-              </div>
-              <p className="text-xs text-blue-100 leading-tight hidden sm:block">Clean, updated list with direct apply links</p>
+                <div className="text-left">
+                  <div className="text-xs font-medium text-white whitespace-nowrap">Find Jobs</div>
+                </div>
+              </button>
+              
+              <Link to="/documents?tab=tools" className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group">
+                <div className="p-0.5 bg-purple-500 rounded">
+                  <Camera className="h-2.5 w-2.5 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-medium text-white whitespace-nowrap">Format Docs</div>
+                </div>
+              </Link>
+              
+              <button 
+                onClick={() => {
+                  if (isAuthenticated) {
+                    window.location.href = '/documents?tab=manager';
+                  } else {
+                    window.location.href = '/signin';
+                  }
+                }}
+                className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group"
+              >
+                <div className="p-0.5 bg-orange-500 rounded">
+                  <Shield className="h-2.5 w-2.5 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-medium text-white whitespace-nowrap">Secure Storage</div>
+                </div>
+              </button>
+              
+              <button 
+                onClick={() => {
+                  if (isAuthenticated) {
+                    window.location.href = '/auto-apply';
+                  } else {
+                    window.location.href = '/signin';
+                  }
+                }}
+                className="flex-shrink-0 flex items-center space-x-1 sm:space-x-1.5 bg-white/10 hover:bg-white/20 rounded-md px-2 py-1 sm:py-1.5 transition-all duration-200 group"
+              >
+                <div className="p-0.5 bg-red-500 rounded">
+                  <Zap className="h-2.5 w-2.5 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-medium text-white whitespace-nowrap">Auto Apply</div>
+                </div>
+              </button>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
-                <div className="p-0.5 sm:p-1 bg-purple-500 rounded flex-shrink-0">
-                  <Camera className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
+            {/* CTA - Right Side */}
+            <div className="flex-shrink-0">
+              {isAuthenticated ? (
+                <div className="flex gap-2">
+                  <Link
+                    to="/documents"
+                    className="inline-flex items-center space-x-1 bg-white text-blue-600 px-2.5 py-1 rounded-md font-medium hover:bg-blue-50 transition-all duration-200 text-xs shadow-sm"
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span className="hidden sm:inline">Manage Docs</span>
+                    <span className="sm:hidden">Docs</span>
+                  </Link>
+                  <Link
+                    to="/auto-apply"
+                    className="inline-flex items-center space-x-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2.5 py-1 rounded-md font-medium hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 text-xs shadow-sm"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    <span className="hidden sm:inline">Auto-Apply</span>
+                    <span className="sm:hidden">Auto</span>
+                  </Link>
                 </div>
-                <h3 className="font-semibold text-xs truncate">Format Documents</h3>
-              </div>
-              <p className="text-xs text-blue-100 leading-tight hidden sm:block">Edit, resize photos & docs to exact standards</p>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
-                <div className="p-0.5 sm:p-1 bg-orange-500 rounded flex-shrink-0">
-                  <Shield className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <Link
+                    to="/signup"
+                    className="inline-flex items-center space-x-1 bg-white text-blue-600 px-2.5 py-1 rounded-md font-medium hover:bg-blue-50 transition-all duration-200 text-xs shadow-sm"
+                  >
+                    <UserPlus className="h-3 w-3" />
+                    <span>Get Started Free</span>
+                  </Link>
+                  <Link
+                    to="/signin"
+                    className="text-blue-100 hover:text-white text-xs font-medium transition-colors"
+                  >
+                    <span className="underline">Sign In</span>
+                  </Link>
                 </div>
-                <h3 className="font-semibold text-xs truncate">Secure Storage</h3>
-              </div>
-              <p className="text-xs text-blue-100 leading-tight hidden sm:block">Access your documents anytime, anywhere</p>
+              )}
             </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-md p-1.5 sm:p-2.5 border border-white/20">
-              <div className="flex items-center space-x-1 sm:space-x-1.5 mb-0.5 sm:mb-1">
-                <div className="p-0.5 sm:p-1 bg-red-500 rounded flex-shrink-0">
-                  <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
-                </div>
-                <h3 className="font-semibold text-xs truncate">One-Click Format</h3>
-              </div>
-              <p className="text-xs text-blue-100 leading-tight hidden sm:block">No more rejections for wrong size/format</p>
-            </div>
-          </div>
-          
-          {/* CTA Buttons - Primary/Secondary Layout */}
-          <div className="space-y-2 sm:flex sm:flex-row sm:justify-center sm:gap-3 sm:space-y-0 px-2">
-            {isAuthenticated ? (
-              <>
-                <Link
-                  to="/documents"
-                  className="w-full sm:w-auto bg-white text-blue-600 px-4 sm:px-6 py-2.5 sm:py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Manage Documents</span>
-                </Link>
-                <Link
-                  to="/auto-apply"
-                  className="w-full sm:w-auto bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 sm:px-6 py-2.5 sm:py-2.5 rounded-lg font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Auto-Apply (Coming Soon)</span>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/signup"
-                  className="w-full sm:w-auto bg-white text-blue-600 px-6 py-3 sm:py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Get Started Free</span>
-                </Link>
-                <Link
-                  to="/signin"
-                  className="w-full sm:w-auto text-center text-blue-100 hover:text-white text-sm font-medium py-2 transition-colors"
-                >
-                  Already have an account? <span className="underline">Sign In</span>
-                </Link>
-              </>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Job Status Navigation - Mobile Responsive Grid */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 -mt-3 sm:mt-0">
-        <div className="bg-white rounded-t-none rounded-b-2xl sm:rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          {/* Mobile: 2x2 Grid, Desktop: Horizontal Tabs */}
-          <div className="grid grid-cols-2 sm:flex sm:border-b sm:border-gray-100">
-            {jobStatusTabs.map((tab, index) => (
-              <button
-                key={tab.id}
-                onClick={() => setJobStatus(tab.id as any)}
-                className={`relative p-3 sm:px-6 sm:py-4 text-center transition-all border-r border-b sm:border-b-2 sm:border-r-0 sm:flex-1 ${
-                  index % 2 === 1 ? 'border-r-0 sm:border-r' : ''
-                } ${
-                  index >= 2 ? 'border-b-0 sm:border-b-2' : ''
-                } ${
-                  jobStatus === tab.id
-                    ? 'bg-blue-50 text-blue-600 border-blue-200 sm:border-blue-500 sm:border-b-blue-500'
-                    : 'text-gray-600 border-gray-200 hover:bg-gray-50 sm:border-transparent sm:hover:text-gray-700'
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center sm:space-x-2">
-                  <span className="text-xs sm:text-sm font-medium leading-tight sm:whitespace-nowrap">
-                    {tab.name}
-                  </span>
-                  <span className={`inline-block mt-1 sm:mt-0 px-2 py-1 rounded-full text-xs font-semibold ${
-                    jobStatus === tab.id
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {tab.count}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-          
-          {/* Enhanced Search & Filters */}
-          <div className="p-3 sm:p-6 space-y-3 sm:space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+      {/* Compact Header Section */}
+      <div className="w-full">
+        <div className="bg-white border-b border-gray-200">
+          {/* Row 1: Tabs + Search */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-3 px-4 sm:px-6 py-2">
+            {/* Job Status Tabs - Left Side */}
+            <div className="flex-1 lg:flex-none">
+              <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+                {jobStatusTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setJobStatus(tab.id as any)}
+                    className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                      jobStatus === tab.id
+                        ? 'bg-blue-600 text-white rounded-md'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md'
+                    }`}
+                  >
+                    <span className="hidden sm:inline">{tab.name}</span>
+                    <span className="sm:hidden">{tab.shortName}</span>
+                    <span className="ml-1 text-xs opacity-90">({tab.count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Search Bar - Right Side */}
+            <div className="relative flex-shrink-0 w-full lg:w-72">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search government jobs..."
-                className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Search jobs..."
+                className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
-            {/* Common Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          </div>
+          
+          {/* Row 2: Core Filters + Categories */}
+          <div className="px-4 sm:px-6 pb-2 space-y-1.5">
+            {/* Core Filters Row */}
+            <div className="flex flex-col sm:flex-row items-stretch gap-2">
               <select 
-                className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full sm:flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 value={selectedFilters.location}
                 onChange={(e) => setSelectedFilters({...selectedFilters, location: e.target.value})}
               >
-                <option value="">📍 All Locations</option>
+                <option value="">📍 Location</option>
                 <option value="delhi">Delhi</option>
                 <option value="mumbai">Mumbai</option>
                 <option value="bangalore">Bangalore</option>
@@ -305,82 +334,123 @@ export default function Dashboard() {
               </select>
               
               <select 
-                className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full sm:flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 value={selectedFilters.department}
                 onChange={(e) => setSelectedFilters({...selectedFilters, department: e.target.value})}
               >
-                <option value="">🏢 All Organizations</option>
+                <option value="">🏢 Organization</option>
                 {uniqueOrganizations.slice(0, 8).map(org => (
                   <option key={org} value={org}>{org}</option>
                 ))}
               </select>
               
               <select 
-                className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full sm:flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                 value={selectedFilters.qualification}
                 onChange={(e) => setSelectedFilters({...selectedFilters, qualification: e.target.value})}
               >
-                <option value="">🎓 All Qualifications</option>
+                <option value="">🎓 Qualification</option>
                 <option value="graduate">Graduate</option>
                 <option value="post-graduate">Post Graduate</option>
                 <option value="12th">12th Pass</option>
                 <option value="10th">10th Pass</option>
               </select>
-            </div>
-            
-            {/* Advanced Filters Toggle */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
-              >
-                <Filter className="h-4 w-4" />
-                <span>Advanced Filters</span>
-                {showAdvancedFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
               
-              <button
-                onClick={fetchGovernmentJobs}
-                disabled={loading}
-                className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                <span>{loading ? 'Loading...' : 'Search Jobs'}</span>
-              </button>
+              {/* Advanced Filters & Search Button */}
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className={`flex-1 sm:flex-none px-3 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center space-x-1 ${
+                    showAdvancedFilters ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline">More</span>
+                </button>
+                
+                <button
+                  onClick={fetchGovernmentJobs}
+                  disabled={loading}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center space-x-1"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">{loading ? 'Loading...' : 'Search'}</span>
+                </button>
+              </div>
             </div>
             
-            {/* Advanced Filters */}
-            {showAdvancedFilters && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
+            {/* Categories Scroll Row */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 font-medium flex-shrink-0">Categories:</span>
+              <div className="flex overflow-x-auto scrollbar-hide gap-1.5">
+                {jobCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => {
+                      setSelectedCategory(selectedCategory === category.id ? null : category.id)
+                      setSearchTerm('')
+                    }}
+                    className={`flex-shrink-0 inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                      selectedCategory === category.id 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span>{category.icon}</span>
+                    <span className="whitespace-nowrap">{category.name}</span>
+                    <span className={`px-1 py-0.5 rounded-full text-xs ${
+                      selectedCategory === category.id 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>{category.jobCount}</span>
+                  </button>
+                ))}
+                {selectedCategory && (
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="flex-shrink-0 inline-flex items-center space-x-1 px-2.5 py-1 bg-red-100 text-red-600 rounded-full text-xs font-medium hover:bg-red-200 transition-colors"
+                  >
+                    <span>Clear</span>
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Advanced Filters - Collapsed by Default */}
+          {showAdvancedFilters && (
+            <div className="px-2 sm:px-3 pb-3 border-t border-gray-200">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-3">
                 <select 
-                  className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   value={selectedFilters.jobType}
                   onChange={(e) => setSelectedFilters({...selectedFilters, jobType: e.target.value})}
                 >
                   <option value="">🏛️ Job Type</option>
-                  <option value="central">Central Government</option>
-                  <option value="state">State Government</option>
+                  <option value="central">Central Govt</option>
+                  <option value="state">State Govt</option>
                   <option value="psu">PSU</option>
                 </select>
                 
                 <select 
-                  className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   value={selectedFilters.salary}
                   onChange={(e) => setSelectedFilters({...selectedFilters, salary: e.target.value})}
                 >
-                  <option value="">💰 Salary Range</option>
-                  <option value="0-25000">₹0 - ₹25,000</option>
-                  <option value="25000-50000">₹25,000 - ₹50,000</option>
-                  <option value="50000-100000">₹50,000 - ₹1,00,000</option>
-                  <option value="100000+">₹1,00,000+</option>
+                  <option value="">💰 Salary</option>
+                  <option value="0-25000">₹0-25K</option>
+                  <option value="25000-50000">₹25-50K</option>
+                  <option value="50000-100000">₹50K-1L</option>
+                  <option value="100000+">₹1L+</option>
                 </select>
                 
                 <select 
-                  className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   value={selectedFilters.experience}
                   onChange={(e) => setSelectedFilters({...selectedFilters, experience: e.target.value})}
                 >
@@ -392,73 +462,33 @@ export default function Dashboard() {
                 </select>
                 
                 <select 
-                  className="border border-gray-300 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   value={selectedFilters.ageLimit}
                   onChange={(e) => setSelectedFilters({...selectedFilters, ageLimit: e.target.value})}
                 >
                   <option value="">👤 Age Limit</option>
-                  <option value="18-25">18-25 years</option>
-                  <option value="18-30">18-30 years</option>
-                  <option value="18-35">18-35 years</option>
-                  <option value="no-limit">No Age Limit</option>
+                  <option value="18-25">18-25</option>
+                  <option value="18-30">18-30</option>
+                  <option value="18-35">18-35</option>
+                  <option value="no-limit">No Limit</option>
                 </select>
               </div>
-            )}
-            
-            {/* Popular Categories */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2 sm:mb-3">Popular Categories:</p>
-              <div className="flex flex-wrap gap-2">
-                {jobCategories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => {
-                      setSelectedCategory(selectedCategory === category.id ? null : category.id)
-                      setSearchTerm('')
-                    }}
-                    className={`inline-flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
-                      selectedCategory === category.id 
-                        ? 'bg-blue-600 text-white shadow-lg' 
-                        : 'bg-white text-gray-700 hover:bg-blue-50 border border-gray-200'
-                    }`}
-                  >
-                    <span className="text-sm sm:text-base">{category.icon}</span>
-                    <span className="whitespace-nowrap">{category.name}</span>
-                    <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
-                      selectedCategory === category.id 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>{category.jobCount}</span>
-                  </button>
-                ))}
-                {selectedCategory && (
-                  <button
-                    onClick={() => setSelectedCategory(null)}
-                    className="inline-flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-red-100 text-red-700 rounded-full text-xs sm:text-sm font-medium hover:bg-red-200 transition-colors"
-                  >
-                    <span>Clear</span>
-                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </button>
-                )}
-              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-
-
       {/* Jobs List */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <div className="w-full">
+        <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 sm:p-6 shadow-lg border-b border-gray-100">
+          <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+              <h2 className="text-lg font-bold text-gray-900 mb-0.5">
                 Available Jobs
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm text-gray-600">
                 <span className="font-semibold text-blue-600">{filteredJobs.length}</span> jobs found
-                {selectedCategory && <span className="ml-2 text-xs sm:text-sm">in {jobCategories.find(c => c.id === selectedCategory)?.name}</span>}
+                {selectedCategory && <span className="ml-2 text-xs">in {jobCategories.find(c => c.id === selectedCategory)?.name}</span>}
               </p>
             </div>
           </div>
@@ -480,106 +510,90 @@ export default function Dashboard() {
               <p className="text-gray-600 text-sm sm:text-base">Discovering government jobs using AI...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {filteredJobs.length === 0 ? (
-                <div className="col-span-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-12 text-center">
-                  <div className="bg-blue-50 p-4 sm:p-6 rounded-full w-fit mx-auto mb-4 sm:mb-6">
-                    <Building className="h-12 w-12 sm:h-16 sm:w-16 text-blue-600" />
+                <div className="col-span-full bg-white rounded-lg border border-gray-200 p-6 text-center">
+                  <div className="bg-blue-50 p-3 rounded-full w-fit mx-auto mb-3">
+                    <Building className="h-10 w-10 text-blue-600" />
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No jobs found</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">Try adjusting your filters or search terms to find more opportunities.</p>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">No jobs found</h3>
+                  <p className="text-gray-600 text-sm">Try adjusting your filters or search terms.</p>
                 </div>
               ) : (
                 filteredJobs.slice(0, 24).map((job) => (
-                  <div key={job.id} className="group bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:border-blue-200 hover:-translate-y-1 overflow-hidden">
-                    {/* Organization Header with Badge */}
-                    <div className="relative bg-gradient-to-r from-blue-500 to-indigo-600 p-3 sm:p-4 text-white">
-                      {/* Status Badge - Top Right */}
-                      <div className={`absolute top-2 sm:top-3 right-2 sm:right-3 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold z-10 ${
+                  <div key={job.id} className="group bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all duration-200 overflow-hidden">
+                    {/* Compact Header */}
+                    <div className="relative bg-gradient-to-r from-blue-500 to-indigo-500 p-2 text-white">
+                      {/* Status Badge */}
+                      <div className={`absolute top-1 right-1 px-1.5 py-0.5 rounded text-xs font-medium ${
                         job.status === 'admit-card' 
                           ? 'bg-orange-100 text-orange-700' 
                           : job.status === 'results' 
                           ? 'bg-green-100 text-green-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {job.status === 'admit-card' ? '🎫 Admit Card' : job.status === 'results' ? '📊 Results Out' : '🔥 Active'}
+                        {job.status === 'admit-card' ? 'Card' : job.status === 'results' ? 'Results' : 'Active'}
                       </div>
                       
-                      <div className="flex items-center space-x-2 sm:space-x-3 pr-20 sm:pr-24">
-                        <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-                          <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                      <div className="flex items-center space-x-1.5 pr-14">
+                        <div className="p-0.5 bg-white/20 rounded">
+                          <Building2 className="h-3 w-3 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm font-medium text-blue-100 truncate">
+                          <p className="text-xs font-medium text-blue-100 truncate">
                             {job.organization || job.company}
                           </p>
-                          <p className="text-xs text-blue-200">Government Job</p>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                    <div className="p-2.5 space-y-1.5">
                       {/* Job Title */}
                       <div>
-                        <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-2 line-clamp-2 leading-tight group-hover:text-blue-900 transition-colors">
+                        <h3 className="font-semibold text-gray-900 text-sm mb-0.5 line-clamp-2 leading-tight group-hover:text-blue-900 transition-colors">
                           {job.title}
                         </h3>
                       </div>
                       
-                      {/* Key Information */}
-                      <div className="space-y-2 sm:space-y-3">
-                        <div className="flex items-center space-x-2 sm:space-x-3">
-                          <div className="p-1.5 sm:p-2 bg-green-50 rounded-lg">
-                            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{job.location}</p>
-                            <p className="text-xs text-gray-500">Location</p>
-                          </div>
+                      {/* Compact Key Information */}
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-1.5">
+                          <MapPin className="h-3 w-3 text-green-600 flex-shrink-0" />
+                          <p className="text-xs text-gray-600 truncate">
+                            {job.location || 'Multiple Locations'}
+                          </p>
                         </div>
                         
-                        <div className="flex items-center space-x-2 sm:space-x-3">
-                          <div className="p-1.5 sm:p-2 bg-red-50 rounded-lg">
-                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-semibold text-red-600 truncate">
-                              {job.apply_last_date || job.application_deadline || job.last_date || 'Check notification'}
-                            </p>
-                            <p className="text-xs text-gray-500">Application Deadline</p>
-                          </div>
+                        <div className="flex items-center space-x-1.5">
+                          <Clock className="h-3 w-3 text-red-600 flex-shrink-0" />
+                          <p className="text-xs text-red-600 font-medium truncate">
+                            {job.apply_last_date || job.application_deadline || job.last_date || 'Check notification'}
+                          </p>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                          <div className="flex items-center space-x-1.5 sm:space-x-2">
-                            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                            <div>
-                              <p className="text-xs sm:text-sm font-medium text-gray-900">{job.vacancies || 'Multiple'}</p>
-                              <p className="text-xs text-gray-500">Vacancies</p>
-                            </div>
+                        <div className="grid grid-cols-2 gap-1.5 text-xs">
+                          <div className="flex items-center space-x-1">
+                            <Users className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                            <span className="text-gray-600 truncate">{job.vacancies || 'Multiple'}</span>
                           </div>
-                          <div className="flex items-center space-x-1.5 sm:space-x-2">
-                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                            <div>
-                              <p className="text-xs sm:text-sm font-medium text-gray-900">{job.fee ? `₹${job.fee}` : 'Free'}</p>
-                              <p className="text-xs text-gray-500">Application Fee</p>
-                            </div>
+                          <div className="flex items-center space-x-1">
+                            <TrendingUp className="h-3 w-3 text-purple-600 flex-shrink-0" />
+                            <span className="text-gray-600 truncate">{job.fee ? `₹${job.fee}` : 'Free'}</span>
                           </div>
                         </div>
                       </div>
                       
-                      {/* Action Buttons */}
-                      <div className="flex space-x-2 sm:space-x-3 pt-3 sm:pt-4">
+                      {/* Compact Inline Buttons */}
+                      <div className="flex space-x-1.5 pt-1">
                         <button
                           onClick={() => {
                             setSelectedJob(job)
                             setShowJobDetails(true)
                           }}
-                          className="flex-1 bg-gray-100 text-gray-700 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold hover:bg-gray-200 transition-all duration-300 flex items-center justify-center space-x-1 sm:space-x-2"
+                          className="flex-1 px-2 py-1 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
                         >
-                          <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="hidden xs:inline">View Details</span>
-                          <span className="xs:hidden">View</span>
+                          <Eye className="h-3 w-3" />
+                          <span>View</span>
                         </button>
                         <a
                           href={(() => {
@@ -589,11 +603,10 @@ export default function Dashboard() {
                           })()}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center space-x-1 sm:space-x-2 shadow-lg hover:shadow-xl"
+                          className="flex-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-1"
                         >
-                          <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="hidden xs:inline">Apply Now</span>
-                          <span className="xs:hidden">Apply</span>
+                          <ExternalLink className="h-3 w-3" />
+                          <span>Apply</span>
                         </a>
                       </div>
                     </div>
@@ -605,107 +618,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Platform Benefits Section - Compact & Aligned */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 py-4 sm:py-6">
-          <div className="text-center mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
-              Your Complete Govt Job Application Kit
-            </h2>
-            
-            {/* Primary CTA */}
-            <div className="mb-4">
-              {isAuthenticated ? (
-                <Link
-                  to="/documents"
-                  className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md text-sm"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Start Using Document Tools</span>
-                </Link>
-              ) : (
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md text-sm"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Start Applying Smarter Today</span>
-                </Link>
-              )}
-            </div>
-            
-            <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-              Stop wasting time on formatting. Focus on preparing for your dream job, not fixing document sizes.
-            </p>
-          </div>
-          
-          {/* Compact Benefits Grid */}
-          <div className="max-w-4xl mx-auto px-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="bg-green-100 p-2 rounded-lg w-fit mx-auto mb-3">
-                  <Clock className="h-5 w-5 text-green-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Save Hours Daily</h3>
-                <p className="text-gray-600 text-sm">
-                  No more manual resizing. Our AI formats documents in seconds.
-                </p>
-              </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="bg-blue-100 p-2 rounded-lg w-fit mx-auto mb-3">
-                  <CheckCircle className="h-5 w-5 text-blue-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Perfect Applications</h3>
-                <p className="text-gray-600 text-sm">
-                  Documents meet exact portal requirements every time.
-                </p>
-              </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="bg-purple-100 p-2 rounded-lg w-fit mx-auto mb-3">
-                  <Shield className="h-5 w-5 text-purple-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Secure Storage</h3>
-                <p className="text-gray-600 text-sm">
-                  Access your documents anytime, anywhere securely.
-                </p>
-              </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="bg-orange-100 p-2 rounded-lg w-fit mx-auto mb-3">
-                  <Sparkles className="h-5 w-5 text-orange-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Auto-Apply Coming</h3>
-                <p className="text-gray-600 text-sm">
-                  AI will fill applications automatically. Get ready now.
-                </p>
-              </div>
-            </div>
-            
-            {/* Bottom CTA */}
-            <div className="text-center">
-              {isAuthenticated ? (
-                <Link
-                  to="/documents"
-                  className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Start Using Document Tools</span>
-                </Link>
-              ) : (
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Start Applying Smarter Today</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Job Details Modal */}
       {showJobDetails && selectedJob && (
