@@ -21,6 +21,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchSuggestions, setSearchSuggestions] = useState<Job[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [showJobDetails, setShowJobDetails] = useState(false)
@@ -38,6 +40,30 @@ export default function Dashboard() {
       fetchGovernmentJobs()
     }
   }, [selectedFilters.location, selectedFilters.department])
+
+  // Handle search suggestions
+  useEffect(() => {
+    if (searchTerm.trim().length > 2) {
+      const filtered = governmentJobs.filter(job => 
+        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.company?.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, 5) // Limit to 5 suggestions
+      setSearchSuggestions(filtered)
+      setShowSuggestions(true)
+    } else {
+      setSearchSuggestions([])
+      setShowSuggestions(false)
+    }
+  }, [searchTerm, governmentJobs])
+
+  const handleSuggestionClick = (job: Job) => {
+    if (job.apply_link) {
+      window.open(job.apply_link, '_blank')
+    }
+    setShowSuggestions(false)
+    setSearchTerm('')
+  }
   
   const fetchGovernmentJobs = async () => {
     try {
@@ -169,6 +195,52 @@ export default function Dashboard() {
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border-b border-blue-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative max-w-4xl mx-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search Govt jobs by title, organization, or qualification..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => searchTerm.trim().length > 2 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="w-full pl-10 pr-4 py-2 text-sm border-2 border-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-md hover:shadow-lg transition-all"
+              />
+              
+              {/* Search Suggestions Dropdown */}
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50 max-h-80 overflow-y-auto">
+                  {searchSuggestions.map((job, index) => (
+                    <div
+                      key={`${job.title}-${index}`}
+                      onClick={() => handleSuggestionClick(job)}
+                      className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-gray-900 mb-1">{job.title}</h4>
+                          <p className="text-xs text-gray-600 mb-1">{job.organization || job.company}</p>
+                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                            <span>{job.location}</span>
+                            {job.apply_last_date && (
+                              <>
+                                <span>•</span>
+                                <span>Apply by: {new Date(job.apply_last_date).toLocaleDateString()}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <ExternalLink className="h-3 w-3 text-gray-400 flex-shrink-0 ml-2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 max-w-4xl mx-auto">
             <button 
               onClick={() => {
@@ -184,7 +256,7 @@ export default function Dashboard() {
               <span className="sm:hidden">Find Jobs</span>
             </button>
             <Link 
-              to="/documents?tab=tools"
+              to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
               className="px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
             >
               <Camera className="h-4 w-4" />
@@ -213,6 +285,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         {/* Search and Filters */}
         <div className="mb-8">
           <div className="mb-6">

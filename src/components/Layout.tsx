@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Building2, User, Home, FileText, 
-  Menu, X, Bell, Search, Zap, Folder, ChevronDown, LogIn, UserPlus 
+  Menu, X, Bell, Zap, Folder, ChevronDown, LogIn, UserPlus 
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -71,17 +71,8 @@ export default function Layout({ children }: LayoutProps) {
               })}
             </div>
 
-            {/* Right side - Search, Notifications, Profile */}
+            {/* Right side - Notifications, Profile */}
             <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Search - Hidden on mobile */}
-              <div className="hidden lg:block relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search jobs..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-              </div>
 
               {/* Notifications - Smaller on mobile */}
               <button className="relative p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
@@ -179,17 +170,6 @@ export default function Layout({ children }: LayoutProps) {
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 bg-white">
             <div className="px-2 sm:px-4 py-2 space-y-1">
-              {/* Mobile Search */}
-              <div className="lg:hidden mb-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search jobs..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
               
               {navigationItems.map((item) => {
                 const Icon = item.icon
