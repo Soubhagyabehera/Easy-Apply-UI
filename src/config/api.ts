@@ -19,7 +19,7 @@ const getApiBaseUrl = (): string => {
   }
   
   // Default to localhost for development
-  return 'https://easy-apply-backend-production.up.railway.app/api/v1'
+  return 'http://localhost:8000/api/v1'
 }
 
 export const apiConfig: ApiConfig = {

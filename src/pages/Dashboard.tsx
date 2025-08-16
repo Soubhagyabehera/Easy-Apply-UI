@@ -605,84 +605,103 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Platform Benefits Section */}
+      {/* Platform Benefits Section - Compact & Aligned */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 text-white rounded-2xl py-4 sm:py-5">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 py-4 sm:py-6">
           <div className="text-center mb-4">
-            <h2 className="text-xl md:text-2xl font-bold mb-1">
-              Stop Wasting Time on Formatting
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
+              Your Complete Govt Job Application Kit
             </h2>
-            <p className="text-sm sm:text-base text-blue-100 mb-3">
-              Focus on preparing for your dream job, not fixing document sizes
+            
+            {/* Primary CTA */}
+            <div className="mb-4">
+              {isAuthenticated ? (
+                <Link
+                  to="/documents"
+                  className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md text-sm"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Start Using Document Tools</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/signup"
+                  className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md text-sm"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Start Applying Smarter Today</span>
+                </Link>
+              )}
+            </div>
+            
+            <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+              Stop wasting time on formatting. Focus on preparing for your dream job, not fixing document sizes.
             </p>
           </div>
           
-          <div className="max-w-4xl mx-auto px-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-              <div className="text-center">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="bg-gradient-to-r from-green-400 to-emerald-500 p-1.5 rounded-md w-fit mx-auto mb-1">
-                    <Clock className="h-3 w-3 text-white" />
-                  </div>
-                  <h3 className="text-xs font-bold mb-0.5">Save Hours Daily</h3>
-                  <p className="text-blue-100 text-xs leading-tight">
-                    No more manual resizing. Our AI does it all in seconds.
-                  </p>
+          {/* Compact Benefits Grid */}
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-green-100 p-2 rounded-lg w-fit mx-auto mb-3">
+                  <Clock className="h-5 w-5 text-green-600" />
                 </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Save Hours Daily</h3>
+                <p className="text-gray-600 text-sm">
+                  No more manual resizing. Our AI formats documents in seconds.
+                </p>
               </div>
               
-              <div className="text-center">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="bg-gradient-to-r from-purple-400 to-pink-500 p-1.5 rounded-md w-fit mx-auto mb-1">
-                    <CheckCircle className="h-3 w-3 text-white" />
-                  </div>
-                  <h3 className="text-xs font-bold mb-0.5">Perfect Applications</h3>
-                  <p className="text-blue-100 text-xs leading-tight">
-                    Documents meet exact portal requirements.
-                  </p>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-blue-100 p-2 rounded-lg w-fit mx-auto mb-3">
+                  <CheckCircle className="h-5 w-5 text-blue-600" />
                 </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Perfect Applications</h3>
+                <p className="text-gray-600 text-sm">
+                  Documents meet exact portal requirements every time.
+                </p>
               </div>
               
-              <div className="text-center">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="bg-gradient-to-r from-orange-400 to-red-500 p-1.5 rounded-md w-fit mx-auto mb-1">
-                    <Sparkles className="h-3 w-3 text-white" />
-                  </div>
-                  <h3 className="text-xs font-bold mb-0.5">Auto-Apply Coming</h3>
-                  <p className="text-blue-100 text-xs leading-tight">
-                    AI will fill applications automatically. Get ready now.
-                  </p>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-purple-100 p-2 rounded-lg w-fit mx-auto mb-3">
+                  <Shield className="h-5 w-5 text-purple-600" />
                 </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Secure Storage</h3>
+                <p className="text-gray-600 text-sm">
+                  Access your documents anytime, anywhere securely.
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-orange-100 p-2 rounded-lg w-fit mx-auto mb-3">
+                  <Sparkles className="h-5 w-5 text-orange-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Auto-Apply Coming</h3>
+                <p className="text-gray-600 text-sm">
+                  AI will fill applications automatically. Get ready now.
+                </p>
               </div>
             </div>
-          </div>
-          
-          {/* Final CTA */}
-          <div className="text-center">
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-              <h3 className="text-xl font-bold mb-2">Your Entire Govt Job Application Kit — In Your Pocket</h3>
-              <p className="text-blue-100 mb-4 text-sm">
-                📌 No more hunting across portals, fixing file sizes, or rushing before deadlines.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-3">
-                {isAuthenticated ? (
-                  <Link
-                    to="/documents"
-                    className="bg-white text-blue-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Start Using Document Tools</span>
-                  </Link>
-                ) : (
-                  <Link
-                    to="/signup"
-                    className="bg-white text-blue-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    <span>Start Applying Smarter Today</span>
-                  </Link>
-                )}
-              </div>
+            
+            {/* Bottom CTA */}
+            <div className="text-center">
+              {isAuthenticated ? (
+                <Link
+                  to="/documents"
+                  className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Start Using Document Tools</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/signup"
+                  className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Start Applying Smarter Today</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
