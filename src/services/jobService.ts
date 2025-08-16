@@ -1,18 +1,9 @@
-import axios from 'axios'
 import { Job } from '../types/job'
-
-const API_BASE_URL = 'https://easy-apply-backend-production.up.railway.app/api/v1'
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+import { apiClient, API_ENDPOINTS } from '../config/api'
 
 export const jobService = {
   async getAllJobs(): Promise<Job[]> {
-    const response = await api.get('/jobs/')
+    const response = await apiClient.get(API_ENDPOINTS.jobs.base + '/')
     
     // Handle the new response format: { status: "success", count: number, data: Job[] }
     if (response.data && response.data.status === 'success') {
@@ -24,7 +15,7 @@ export const jobService = {
   },
 
   async getJobById(jobId: string): Promise<Job> {
-    const response = await api.get(`/jobs/${jobId}`)
+    const response = await apiClient.get(API_ENDPOINTS.jobs.byId(jobId))
     
     if (response.data && response.data.status === 'success') {
       return response.data.data
@@ -34,7 +25,7 @@ export const jobService = {
   },
 
   async createJob(job: Omit<Job, 'job_id' | 'created_at' | 'updated_at'>): Promise<Job> {
-    const response = await api.post('/jobs/manual', job)
+    const response = await apiClient.post(API_ENDPOINTS.jobs.manual, job)
     
     if (response.data && response.data.status === 'success') {
       return response.data.data
@@ -44,7 +35,7 @@ export const jobService = {
   },
 
   async updateJob(jobId: string, job: Partial<Job>): Promise<Job> {
-    const response = await api.put(`/jobs/${jobId}`, job)
+    const response = await apiClient.put(API_ENDPOINTS.jobs.byId(jobId), job)
     
     if (response.data && response.data.status === 'success') {
       return response.data.data
@@ -54,7 +45,7 @@ export const jobService = {
   },
 
   async deleteJob(jobId: string): Promise<void> {
-    const response = await api.delete(`/jobs/${jobId}`)
+    const response = await apiClient.delete(API_ENDPOINTS.jobs.byId(jobId))
     
     if (response.data && response.data.status !== 'success') {
       throw new Error(response.data?.message || 'Failed to delete job')
@@ -79,7 +70,7 @@ export const jobService = {
       }
     })
     
-    const response = await api.get(`/jobs/search/advanced?${params.toString()}`)
+    const response = await apiClient.get(`${API_ENDPOINTS.jobs.search.advanced}?${params.toString()}`)
     
     if (response.data && response.data.status === 'success') {
       return response.data.data || []
@@ -99,7 +90,7 @@ export const jobService = {
     if (filters?.department) params.append('department', filters.department)
     
     // Updated to use the new jobs endpoint that returns consistent JSON format
-    const response = await api.get(`/jobs/?${params.toString()}`)
+    const response = await apiClient.get(`${API_ENDPOINTS.jobs.base}/?${params.toString()}`)
     
     // Handle the new response format: { status: "success", count: number, data: Job[] }
     if (response.data && response.data.status === 'success') {
@@ -111,7 +102,7 @@ export const jobService = {
   },
 
   async discoverJobs(): Promise<any> {
-    const response = await api.get('/jobs/discover')
+    const response = await apiClient.get(API_ENDPOINTS.jobs.discover)
     return response.data
   },
 }

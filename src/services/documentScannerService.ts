@@ -3,7 +3,7 @@
  * Handles document scanning: image-to-PDF, enhancement, auto-cropping
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { apiClient } from '../config/api';
 
 export interface ScanResponse {
   success: boolean;
@@ -55,7 +55,7 @@ class DocumentScannerService {
       formData.append('enhance_images', enhanceImages.toString());
       formData.append('auto_crop', autoCrop.toString());
 
-      const response = await fetch(`${API_BASE_URL}/document-scanner/scan`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/scan`, {
         method: 'POST',
         body: formData,
       });
@@ -85,7 +85,7 @@ class DocumentScannerService {
       });
       formData.append('enhancement_level', enhancementLevel);
 
-      const response = await fetch(`${API_BASE_URL}/document-scanner/enhance`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/enhance`, {
         method: 'POST',
         body: formData,
       });
@@ -106,7 +106,7 @@ class DocumentScannerService {
    */
   async downloadScan(scanId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/document-scanner/download/${scanId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/download/${scanId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -124,7 +124,7 @@ class DocumentScannerService {
    */
   async downloadBatch(batchId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/document-scanner/download-batch/${batchId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/download-batch/${batchId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -145,7 +145,7 @@ class DocumentScannerService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_BASE_URL}/document-scanner/validate`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/validate`, {
         method: 'POST',
         body: formData,
       });
@@ -162,7 +162,7 @@ class DocumentScannerService {
    */
   async getInfo(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/document-scanner/info`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/document-scanner/info`);
       return await response.json();
     } catch (error) {
       console.error('Failed to get document scanner info:', error);

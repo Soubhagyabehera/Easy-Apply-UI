@@ -3,7 +3,7 @@
  * Handles signature creation: text, drawn, and uploaded signatures
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { apiClient } from '../config/api';
 
 export interface SignatureResponse {
   success: boolean;
@@ -46,7 +46,7 @@ class SignatureCreatorService {
       formData.append('color', color);
       formData.append('background_transparent', backgroundTransparent.toString());
 
-      const response = await fetch(`${API_BASE_URL}/signature-creator/create-text`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/signature-creator/create-text`, {
         method: 'POST',
         body: formData,
       });
@@ -76,7 +76,7 @@ class SignatureCreatorService {
       formData.append('signature_size', signatureSize);
       formData.append('background_transparent', backgroundTransparent.toString());
 
-      const response = await fetch(`${API_BASE_URL}/signature-creator/create-drawn`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/signature-creator/create-drawn`, {
         method: 'POST',
         body: formData,
       });
@@ -106,7 +106,7 @@ class SignatureCreatorService {
       formData.append('signature_size', signatureSize);
       formData.append('background_transparent', backgroundTransparent.toString());
 
-      const response = await fetch(`${API_BASE_URL}/signature-creator/upload`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/signature-creator/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -127,7 +127,7 @@ class SignatureCreatorService {
    */
   async downloadSignature(signatureId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/signature-creator/download/${signatureId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/signature-creator/download/${signatureId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -145,7 +145,7 @@ class SignatureCreatorService {
    */
   async getThumbnail(signatureId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/signature-creator/thumbnail/${signatureId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/signature-creator/thumbnail/${signatureId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -163,7 +163,7 @@ class SignatureCreatorService {
    */
   async getInfo(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/signature-creator/info`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/signature-creator/info`);
       return await response.json();
     } catch (error) {
       console.error('Failed to get signature creator info:', error);

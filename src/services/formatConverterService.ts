@@ -3,7 +3,7 @@
  * Handles format conversion: PDF <-> images, document formats, etc.
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { apiClient } from '../config/api';
 
 export interface ConversionResponse {
   success: boolean;
@@ -45,7 +45,7 @@ class FormatConverterService {
       formData.append('dpi', dpi.toString());
       formData.append('quality', quality.toString());
 
-      const response = await fetch(`${API_BASE_URL}/format-converter/pdf-to-images`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/pdf-to-images`, {
         method: 'POST',
         body: formData,
       });
@@ -77,7 +77,7 @@ class FormatConverterService {
       formData.append('page_size', pageSize);
       formData.append('quality', quality.toString());
 
-      const response = await fetch(`${API_BASE_URL}/format-converter/images-to-pdf`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/images-to-pdf`, {
         method: 'POST',
         body: formData,
       });
@@ -94,6 +94,34 @@ class FormatConverterService {
   }
 
   /**
+   * Convert to image formats (JPG, PNG)
+   */
+  async convertToImage(
+    file: File,
+    outputFormat: string
+  ): Promise<ConversionResponse> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('target_format', outputFormat);
+
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/convert-to-image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Image conversion failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Convert document formats (DOCX, TXT, etc.)
    */
   async convertDocument(
@@ -103,9 +131,9 @@ class FormatConverterService {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('output_format', outputFormat);
+      formData.append('target_format', outputFormat);
 
-      const response = await fetch(`${API_BASE_URL}/format-converter/convert-document`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/document-format`, {
         method: 'POST',
         body: formData,
       });
@@ -126,7 +154,7 @@ class FormatConverterService {
    */
   async downloadFile(fileId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/format-converter/download/${fileId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/download/${fileId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -144,7 +172,7 @@ class FormatConverterService {
    */
   async downloadBatch(conversionId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/format-converter/download-batch/${conversionId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/download-batch/${conversionId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -165,7 +193,7 @@ class FormatConverterService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_BASE_URL}/format-converter/validate`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/validate`, {
         method: 'POST',
         body: formData,
       });
@@ -182,7 +210,7 @@ class FormatConverterService {
    */
   async getInfo(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/format-converter/info`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/format-converter/info`);
       return await response.json();
     } catch (error) {
       console.error('Failed to get format converter info:', error);

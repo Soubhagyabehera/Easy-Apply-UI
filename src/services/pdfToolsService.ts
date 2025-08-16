@@ -3,7 +3,7 @@
  * Handles PDF operations: merge, split, compress, etc.
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { apiClient } from '../config/api';
 
 export interface PDFOperationResponse {
   success: boolean;
@@ -58,7 +58,7 @@ class PDFToolsService {
         formData.append('files', file);
       });
 
-      const response = await fetch(`${API_BASE_URL}/pdf-tools/merge`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/merge`, {
         method: 'POST',
         body: formData,
       });
@@ -93,7 +93,7 @@ class PDFToolsService {
         formData.append('page_ranges', pageRanges);
       }
 
-      const response = await fetch(`${API_BASE_URL}/pdf-tools/split`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/split`, {
         method: 'POST',
         body: formData,
       });
@@ -121,7 +121,7 @@ class PDFToolsService {
       formData.append('file', file);
       formData.append('compression_level', compressionLevel);
 
-      const response = await fetch(`${API_BASE_URL}/pdf-tools/compress`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/compress`, {
         method: 'POST',
         body: formData,
       });
@@ -142,7 +142,7 @@ class PDFToolsService {
    */
   async downloadFile(fileId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/pdf-tools/download/${fileId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/download/${fileId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -160,7 +160,7 @@ class PDFToolsService {
    */
   async downloadBatch(batchId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/pdf-tools/download-batch/${batchId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/download-batch/${batchId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -181,7 +181,7 @@ class PDFToolsService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_BASE_URL}/pdf-tools/validate`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/validate`, {
         method: 'POST',
         body: formData,
       });
@@ -198,10 +198,128 @@ class PDFToolsService {
    */
   async getInfo(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/pdf-tools/info`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/info`);
       return await response.json();
     } catch (error) {
       console.error('Failed to get PDF tools info:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Combine different document types into a single PDF
+   */
+  async combineDocumentsToPDF(files: File[]): Promise<PDFOperationResponse> {
+    try {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/combine-documents`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Document combination failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert PDF pages to images
+   */
+  async pdfToImages(
+    file: File,
+    imageFormat: string = 'png',
+    dpi: number = 150
+  ): Promise<BatchPDFResponse> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('image_format', imageFormat);
+      formData.append('dpi', dpi.toString());
+
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/pdf-to-images`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('PDF to images conversion failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Combine multiple PDF files (enhanced merge)
+   */
+  async combinePDFs(files: File[]): Promise<PDFOperationResponse> {
+    try {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/combine-pdfs`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('PDF combination failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Download processed image file
+   */
+  async downloadImage(imageId: string): Promise<Blob> {
+    try {
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/download-image/${imageId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Image download failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Download batch of images as ZIP
+   */
+  async downloadImageBatch(batchId: string): Promise<Blob> {
+    try {
+      const response = await fetch(`${apiClient.defaults.baseURL}/pdf-tools/download-images/${batchId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Image batch download failed:', error);
       throw error;
     }
   }

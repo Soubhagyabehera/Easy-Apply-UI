@@ -33,6 +33,7 @@ export interface Job {
   source?: string
   created_at?: string
   updated_at?: string
+  status?: 'active' | 'admit-card' | 'results' | 'closed'
   
   // Legacy/backward compatibility fields
   id?: number

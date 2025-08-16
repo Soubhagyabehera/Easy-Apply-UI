@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Folder, Upload, Download, Eye, Trash2, 
   CheckCircle, AlertCircle, Plus, FileText, 
-  Image, File, Calendar, Shield, User, Settings, 
-  Scissors, RotateCw, X, Move, Palette, Camera, 
-  PenTool, Combine, Maximize2, FileImage 
+  Image, File, Shield, User, Settings, 
+  Scissors, RotateCw, X, Camera, 
+  PenTool, Combine, Maximize2, FileImage, Info,
+  Image as ImageIcon, Award
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { photoEditorService } from '../services/photoEditorService'
@@ -13,6 +14,7 @@ import { signatureCreatorService } from '../services/signatureCreatorService'
 import { documentScannerService } from '../services/documentScannerService'
 import { formatConverterService } from '../services/formatConverterService'
 import { sizeOptimizerService } from '../services/sizeOptimizerService'
+import { documentManagerService, UserDocument, DocumentTypesResponse } from '../services/documentManagerService'
 
 interface Document {
   id: number
@@ -31,96 +33,47 @@ interface Document {
 
 export default function DocumentsPage() {
   const { isAuthenticated } = useAuth()
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: 1,
-      name: 'Graduation Certificate',
-      type: 'certificate',
-      fileName: 'graduation_cert.pdf',
-      fileSize: '1.2 MB',
-      uploadDate: '2024-01-15',
-      status: 'verified',
-      isRequired: true,
-      description: 'Final degree certificate from recognized university',
-      maxSize: '2 MB',
-      allowedFormats: ['PDF', 'JPG', 'PNG']
-    },
-    {
-      id: 2,
-      name: 'Passport Size Photo',
-      type: 'photo',
-      fileName: 'photo.jpg',
-      fileSize: '85 KB',
-      uploadDate: '2024-01-15',
-      status: 'verified',
-      isRequired: true,
-      description: 'Recent passport size photograph with white background',
-      maxSize: '100 KB',
-      allowedFormats: ['JPG', 'PNG']
-    },
-    {
-      id: 3,
-      name: 'Digital Signature',
-      type: 'signature',
-      fileName: 'signature.png',
-      fileSize: '45 KB',
-      uploadDate: '2024-01-15',
-      status: 'verified',
-      isRequired: true,
-      description: 'Clear digital signature on white background',
-      maxSize: '50 KB',
-      allowedFormats: ['JPG', 'PNG']
-    },
-    {
-      id: 4,
-      name: 'Aadhar Card',
-      type: 'identity',
-      fileName: 'aadhar.pdf',
-      fileSize: '890 KB',
-      uploadDate: '2024-01-15',
-      status: 'pending',
-      isRequired: true,
-      description: 'Government issued Aadhar card for identity verification',
-      maxSize: '1 MB',
-      allowedFormats: ['PDF', 'JPG']
-    },
-    {
-      id: 5,
-      name: 'Caste Certificate',
-      type: 'certificate',
-      fileName: 'caste_cert.pdf',
-      fileSize: '1.5 MB',
-      uploadDate: '2024-01-10',
-      status: 'rejected',
-      expiryDate: '2024-12-31',
-      isRequired: false,
-      description: 'Valid caste certificate for reservation benefits',
-      maxSize: '2 MB',
-      allowedFormats: ['PDF']
-    }
-  ])
+  const [documents, setDocuments] = useState<Document[]>([]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'documents' | 'tools'>('documents')
+  const [activeTab, setActiveTab] = useState<'documents' | 'manager' | 'tools'>('documents')
   const [activeToolModal, setActiveToolModal] = useState<string | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])  
   const [processedFiles, setProcessedFiles] = useState<any[]>([])  
   const [isProcessing, setIsProcessing] = useState(false)  
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);  
   const [outputFormat, setOutputFormat] = useState<'JPG' | 'PNG' | 'PDF'>('JPG')  
   const [imageWidth, setImageWidth] = useState<number>(200)  
   const [imageHeight, setImageHeight] = useState<number>(200)
+  const [maintainAspectRatio, setMaintainAspectRatio] = useState<boolean>(true)
+  const [maxFileSizeKb, setMaxFileSizeKb] = useState<number>(500)
   
   // Additional state for other document tools
-  const [pdfOperation, setPdfOperation] = useState<'merge' | 'split' | 'compress'>('merge')
+  const [pdfOperation, setPdfOperation] = useState<'merge' | 'split' | 'compress' | 'combine_documents' | 'pdf_to_images' | 'combine_pdfs'>('merge')
   const [splitPagesPerFile, setSplitPagesPerFile] = useState<number>(1)
   const [compressionLevel, setCompressionLevel] = useState<'low' | 'medium' | 'high'>('medium')
   const [signatureType, setSignatureType] = useState<'text' | 'draw' | 'upload'>('text')
+  const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement | null>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [signatureData, setSignatureData] = useState<string>('')
   const [signatureText, setSignatureText] = useState<string>('')
   const [conversionFormat, setConversionFormat] = useState<'JPG' | 'PNG' | 'PDF' | 'DOCX'>('PDF')
   const [enhanceImages, setEnhanceImages] = useState<boolean>(true)
   const [autoCrop, setAutoCrop] = useState<boolean>(true)
   const [optimizationQuality, setOptimizationQuality] = useState<number>(85)
+  
+  // Document Manager state
+  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([])
+  const [documentTypes, setDocumentTypes] = useState<DocumentTypesResponse | null>(null)
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('')
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
+  const [documentStats, setDocumentStats] = useState<any>(null)
+  const [jobDocumentBundle, setJobDocumentBundle] = useState<any>(null)
+  const [isFormattingForJob, setIsFormattingForJob] = useState(false)
+  const [realDocumentStats, setRealDocumentStats] = useState<any>(null)
+  const [showAllUploadedDocs, setShowAllUploadedDocs] = useState(false)
 
   const documentCategories = [
     { id: 'all', name: 'All Documents', icon: Folder },
@@ -176,11 +129,68 @@ export default function DocumentsPage() {
     }
   ]
 
+  // Helper function to get display name for document types
+  const getDocumentDisplayName = (documentType: string): string => {
+    const typeMap: { [key: string]: string } = {
+      'photo': 'Passport Size Photo',
+      'signature': 'Digital Signature',
+      'resume': 'Resume/CV',
+      'certificate': 'Graduation Certificate',
+      'certificate_graduation': 'Graduation Certificate',
+      'certificate_domicile': 'Domicile Certificate',
+      'pan': 'PAN Card',
+      'id_proof': 'Identity Proof',
+      'address_proof': 'Address Proof',
+      'income_certificate': 'Income Certificate',
+      'caste_certificate': 'Caste Certificate',
+      'disability_certificate': 'Disability Certificate',
+      'experience_letter': 'Experience Letter',
+      'marksheet': 'Marksheet',
+      'degree_certificate': 'Graduation Certificate',
+      'other': 'Other Document'
+    }
+    return typeMap[documentType] || documentType.charAt(0).toUpperCase() + documentType.slice(1)
+  }
+
   const filteredDocuments = selectedCategory === 'all' 
     ? documents 
     : documents.filter(doc => doc.type === selectedCategory)
 
-  const stats = {
+  // Load real document statistics from Document Manager
+  useEffect(() => {
+    const loadDocumentStats = async () => {
+      if (isAuthenticated && activeTab === 'documents') {
+        try {
+          const [documentsResponse, statsResponse] = await Promise.all([
+            documentManagerService.getUserDocuments(),
+            documentManagerService.getDocumentStats()
+          ]);
+          
+          setUserDocuments(documentsResponse.documents);
+          setRealDocumentStats(statsResponse);
+        } catch (error) {
+          console.error('Failed to load document statistics:', error);
+          // Fallback to mock data if API fails
+          setRealDocumentStats({
+            total_documents: documents.length,
+            verified_documents: documents.filter(doc => doc.status === 'verified').length,
+            pending_documents: documents.filter(doc => doc.status === 'pending').length,
+            rejected_documents: documents.filter(doc => doc.status === 'rejected').length
+          });
+        }
+      }
+    };
+    
+    loadDocumentStats();
+  }, [isAuthenticated, activeTab]);
+
+  // Calculate stats from real data or fallback to mock data
+  const stats = realDocumentStats ? {
+    total: realDocumentStats.total_documents || 0,
+    verified: realDocumentStats.verified_documents || userDocuments.filter(doc => doc.is_active).length,
+    pending: realDocumentStats.pending_documents || 0,
+    rejected: realDocumentStats.rejected_documents || 0
+  } : {
     total: documents.length,
     verified: documents.filter(doc => doc.status === 'verified').length,
     pending: documents.filter(doc => doc.status === 'pending').length,
@@ -203,22 +213,103 @@ export default function DocumentsPage() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'certificate':
+      case 'degree_certificate':
+      case 'caste_certificate':
+      case 'income_certificate':
+      case 'disability_certificate':
         return <FileText className="h-6 w-6 text-blue-500" />
       case 'photo':
         return <Image className="h-6 w-6 text-green-500" />
       case 'signature':
         return <User className="h-6 w-6 text-purple-500" />
       case 'identity':
+      case 'id_proof':
         return <Shield className="h-6 w-6 text-orange-500" />
+      case 'resume':
+      case 'experience_letter':
+        return <FileText className="h-6 w-6 text-indigo-500" />
+      case 'marksheet':
+        return <FileText className="h-6 w-6 text-teal-500" />
+      case 'address_proof':
+        return <Shield className="h-6 w-6 text-yellow-500" />
       default:
         return <File className="h-6 w-6 text-gray-500" />
+    }
+  }
+
+  // Handle document viewing
+  const handleViewDocument = async (document: any) => {
+    try {
+      if (document.document_id) {
+        // For real documents from backend, we need to implement view functionality
+        console.log('Viewing document:', document.document_id)
+        // TODO: Implement document viewing with backend API
+        alert('Document viewing functionality will be implemented soon')
+      } else {
+        // For uploaded files
+        if (document instanceof File) {
+          const url = URL.createObjectURL(document)
+          window.open(url, '_blank')
+          setTimeout(() => URL.revokeObjectURL(url), 1000)
+        }
+      }
+    } catch (error) {
+      console.error('Error viewing document:', error)
+      alert('Failed to view document')
+    }
+  }
+
+  // Handle document downloading
+  const handleDownloadDocument = async (document: any) => {
+    try {
+      if (document.document_id) {
+        // For real documents from backend
+        console.log('Downloading document:', document.document_id)
+        const token = localStorage.getItem('token') || 'demo_token_user1'
+        const response = await fetch(`http://localhost:8000/api/v1/document-manager/download/${document.document_id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          const url = URL.createObjectURL(blob)
+          const a = window.document.createElement('a')
+          a.href = url
+          a.download = document.original_filename || 'document'
+          window.document.body.appendChild(a)
+          a.click()
+          window.document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+        } else {
+          const errorText = await response.text()
+          console.error('Download failed:', errorText)
+          throw new Error(`Download failed: ${response.status} - ${errorText}`)
+        }
+      } else {
+        // For uploaded files
+        if (document instanceof File) {
+          const url = URL.createObjectURL(document)
+          const a = window.document.createElement('a')
+          a.href = url
+          a.download = document.name
+          window.document.body.appendChild(a)
+          a.click()
+          window.document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error)
+      alert(`Failed to download document: ${error.message}`)
     }
   }
 
   // Processing functions for document tools
   const processPDFTool = async () => {
     if (uploadedFiles.length === 0) {
-      alert('Please upload at least one PDF file first.');
+      alert('Please upload at least one file first.');
       return;
     }
     
@@ -230,29 +321,36 @@ export default function DocumentsPage() {
       
       if (pdfOperation === 'merge') {
         result = await pdfToolsService.mergePDFs(uploadedFiles);
-      } else if (pdfOperation === 'split') {
-        result = await pdfToolsService.splitPDF(uploadedFiles[0], 'pages', splitPagesPerFile);
       } else if (pdfOperation === 'compress') {
         result = await pdfToolsService.compressPDF(uploadedFiles[0], compressionLevel);
+      } else if (pdfOperation === 'combine_documents') {
+        result = await pdfToolsService.combineDocumentsToPDF(uploadedFiles);
+      } else if (pdfOperation === 'pdf_to_images') {
+        result = await pdfToolsService.pdfToImages(uploadedFiles[0], outputFormat.toLowerCase(), 150);
+      } else if (pdfOperation === 'combine_pdfs') {
+        result = await pdfToolsService.combinePDFs(uploadedFiles);
       }
       
       if (result && result.success) {
         const processedFile = {
           id: 0,
-          originalName: (result as any).original_filename || uploadedFiles[0].name,
-          processedName: (result as any).processed_filename || 'processed.pdf',
-          format: 'PDF',
-          size: (result as any).processed_size_mb ? (result as any).processed_size_mb * 1024 : 0,
-          url: (result as any).download_url || '',
-          downloadUrl: (result as any).download_url || '',
+          originalName: (result as any).original_filename || (result as any).input_filename || uploadedFiles[0].name,
+          processedName: pdfOperation === 'pdf_to_images' ? 'images.zip' : ((result as any).processed_filename || 'processed.pdf'),
+          format: pdfOperation === 'pdf_to_images' ? 'Images' : 'PDF',
+          size: pdfOperation === 'pdf_to_images' 
+            ? ((result as any).images || []).reduce((total: number, img: any) => total + (img.size || 0), 0) / 1024
+            : ((result as any).processed_size_mb ? (result as any).processed_size_mb * 1024 : 0),
+          url: (result as any).download_url || (result as any).download_all_url || '',
+          downloadUrl: (result as any).download_url || (result as any).download_all_url || '',
           success: result.success,
-          files: (result as any).files || []
+          files: (result as any).files || (result as any).images || [],
+          batchId: (result as any).batch_id
         };
         setProcessedFiles([processedFile]);
       }
     } catch (error) {
       console.error('PDF processing failed:', error);
-      alert(`PDF processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsProcessing(false);
     }
@@ -271,8 +369,12 @@ export default function DocumentsPage() {
           return;
         }
         result = await signatureCreatorService.createTextSignature(signatureText);
-      } else if (signatureType === 'upload' && uploadedFiles.length > 0) {
-        result = await signatureCreatorService.uploadSignature(uploadedFiles[0]);
+      } else if (signatureType === 'draw') {
+        if (!signatureData) {
+          alert('Please draw your signature first.');
+          return;
+        }
+        result = await signatureCreatorService.createDrawnSignature(signatureData);
       } else {
         alert('Please provide signature data.');
         return;
@@ -286,7 +388,7 @@ export default function DocumentsPage() {
           format: 'PNG',
           size: result.file_size_kb || 0,
           url: result.download_url,
-          downloadUrl: result.download_url,
+          downloadUrl: result.signature_id,
           success: result.success
         };
         setProcessedFiles([processedFile]);
@@ -347,8 +449,8 @@ export default function DocumentsPage() {
       
       if (conversionFormat === 'PDF' && uploadedFiles.every(f => f.type.startsWith('image/'))) {
         result = await formatConverterService.imagesToPDF(uploadedFiles);
-      } else if (['JPG', 'PNG'].includes(conversionFormat) && uploadedFiles[0].type === 'application/pdf') {
-        result = await formatConverterService.pdfToImages(uploadedFiles[0], conversionFormat);
+      } else if (['JPG', 'PNG'].includes(conversionFormat)) {
+        result = await formatConverterService.convertToImage(uploadedFiles[0], conversionFormat);
       } else {
         result = await formatConverterService.convertDocument(uploadedFiles[0], conversionFormat);
       }
@@ -356,20 +458,21 @@ export default function DocumentsPage() {
       if (result && result.success) {
         const processedFile = {
           id: 0,
-          originalName: (result as any).original_filename || uploadedFiles[0].name,
-          processedName: (result as any).processed_filename || 'converted_file',
+          originalName: (result as any).input_filename || uploadedFiles[0].name,
+          processedName: (result as any).output_filename || 'converted_file',
           format: (result as any).output_format || conversionFormat,
-          size: (result as any).file_size_kb || 0,
-          url: (result as any).download_url || '',
-          downloadUrl: (result as any).download_url || '',
+          size: (result as any).output_size_mb ? (result as any).output_size_mb * 1024 : 0,
+          url: `/format-converter/download/${(result as any).conversion_id}`,
+          downloadUrl: `/format-converter/download/${(result as any).conversion_id}`,
           success: result.success,
-          files: (result as any).files || []
+          files: (result as any).files || [],
+          conversionId: (result as any).conversion_id
         };
         setProcessedFiles([processedFile]);
       }
     } catch (error) {
       console.error('Format conversion failed:', error);
-      alert(`Format conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert('Format conversion failed. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -425,7 +528,14 @@ export default function DocumentsPage() {
       
       switch (service) {
         case 'pdf-tools':
-          blob = await pdfToolsService.downloadFile(fileId);
+          // Check if this is an image batch download
+          if (filename === 'images.zip' && processedFiles.length > 0 && processedFiles[0].batchId) {
+            blob = await pdfToolsService.downloadImageBatch(processedFiles[0].batchId);
+          } else {
+            // Extract file ID from download URL if it's a full path
+            const actualFileId = fileId.includes('/') ? fileId.split('/').pop() || fileId : fileId;
+            blob = await pdfToolsService.downloadFile(actualFileId);
+          }
           break;
         case 'signature':
           blob = await signatureCreatorService.downloadSignature(fileId);
@@ -434,7 +544,9 @@ export default function DocumentsPage() {
           blob = await documentScannerService.downloadScan(fileId);
           break;
         case 'converter':
-          blob = await formatConverterService.downloadFile(fileId);
+          // Extract conversion ID from download URL if it's a full path
+          const actualConversionId = fileId.includes('/') ? fileId.split('/').pop() || fileId : fileId;
+          blob = await formatConverterService.downloadFile(actualConversionId);
           break;
         case 'optimizer':
           blob = await sizeOptimizerService.downloadFile(fileId);
@@ -456,6 +568,106 @@ export default function DocumentsPage() {
       alert(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
+
+  // Document Manager functions
+  const loadUserDocuments = async () => {
+    if (!isAuthenticated) return;
+    
+    setIsLoadingDocuments(true);
+    try {
+      const response = await documentManagerService.getUserDocuments();
+      setUserDocuments(response.documents);
+      
+      // Load document stats
+      const stats = await documentManagerService.getDocumentStats();
+      setDocumentStats(stats);
+    } catch (error) {
+      console.error('Failed to load user documents:', error);
+      alert('Failed to load documents. Please try again.');
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  };
+
+  const loadDocumentTypes = async () => {
+    try {
+      const types = await documentManagerService.getDocumentTypes();
+      setDocumentTypes(types);
+    } catch (error) {
+      console.error('Failed to load document types:', error);
+    }
+  };
+
+  const handleDocumentUpload = async (file: File) => {
+    if (!selectedDocumentType) {
+      alert('Please select a document type first.');
+      return;
+    }
+
+    const validation = documentManagerService.validateFile(file, selectedDocumentType);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    try {
+      const result = await documentManagerService.uploadDocument(file, selectedDocumentType);
+      alert(`Document uploaded successfully: ${result.original_filename}`);
+      await loadUserDocuments(); // Refresh the list
+      setSelectedDocumentType('');
+    } catch (error) {
+      console.error('Document upload failed:', error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleDocumentDelete = async (documentId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) {
+      return;
+    }
+
+    try {
+      await documentManagerService.deleteDocument(documentId);
+      alert('Document deleted successfully.');
+      await loadUserDocuments(); // Refresh the list
+    } catch (error) {
+      console.error('Document deletion failed:', error);
+      alert(`Delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleFormatForJob = async (jobId: string = 'demo_job_123') => {
+    setIsFormattingForJob(true);
+    try {
+      const result = await documentManagerService.formatDocumentsForJob(jobId);
+      setJobDocumentBundle(result);
+      alert(`Documents formatted successfully! ${result.total_documents} documents ready for download.`);
+    } catch (error) {
+      console.error('Document formatting failed:', error);
+      alert(`Formatting failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsFormattingForJob(false);
+    }
+  };
+
+  const handleDownloadBundle = async () => {
+    if (!jobDocumentBundle) return;
+    
+    try {
+      await documentManagerService.downloadDocumentBundle(jobDocumentBundle.batch_id);
+    } catch (error) {
+      console.error('Bundle download failed:', error);
+      alert(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Load data on component mount and tab change
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'manager') {
+      loadUserDocuments();
+      loadDocumentTypes();
+    }
+  }, [isAuthenticated, activeTab]);
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
@@ -480,11 +692,11 @@ export default function DocumentsPage() {
           </div>
           {isAuthenticated && (
             <button
-              onClick={() => setUploadModalOpen(true)}
+              onClick={() => setActiveTab('manager')}
               className="bg-white text-indigo-600 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
             >
-              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span>Upload Document</span>
+              <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span>Document Manager</span>
             </button>
           )}
         </div>
@@ -492,216 +704,182 @@ export default function DocumentsPage() {
 
       {/* Tabs for authenticated users */}
       {isAuthenticated && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-1">
           <div className="flex space-x-1">
             <button
               onClick={() => setActiveTab('documents')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === 'documents'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <Folder className="h-4 w-4 inline mr-2" />
-              My Documents
+              <Folder className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">My Documents</span>
+              <span className="sm:hidden">Docs</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('manager')}
+              className={`flex-1 px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                activeTab === 'manager'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <Upload className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Document Manager</span>
+              <span className="sm:hidden">Manager</span>
             </button>
             <button
               onClick={() => setActiveTab('tools')}
-              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === 'tools'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <Settings className="h-4 w-4 inline mr-2" />
-              Document Tools
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Tools</span>
+              <span className="sm:hidden">Tools</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Stats - only show for authenticated users on documents tab */}
-      {isAuthenticated && activeTab === 'documents' && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Documents</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-blue-100 flex-shrink-0">
-              <Folder className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Verified</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mt-1">{stats.verified}</p>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-green-100 flex-shrink-0">
-              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-yellow-100 flex-shrink-0">
-              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Rejected</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 mt-1">{stats.rejected}</p>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-red-100 flex-shrink-0">
-              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-        </div>
-      )}
 
       {/* Document Tools Section */}
       {(!isAuthenticated || activeTab === 'tools') && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Document Editing Tools</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Document Editing Tools</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Photo Editor */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-3 bg-blue-600 rounded-lg">
-                  <Image className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-blue-200">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-blue-600 rounded-lg flex-shrink-0">
+                  <Image className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Photo Editor</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Photo Editor</h3>
               </div>
-              <p className="text-gray-600 mb-4">Resize, crop, and enhance passport photos to meet job application requirements.</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Crop</span>
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Resize</span>
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Background</span>
+              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">Advanced AI-powered photo editing with face detection, background removal, and smart cropping for perfect ID photos.</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">AI Background</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Face Detection</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Smart Crop</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Size Control</span>
               </div>
               <button 
                 onClick={() => setActiveToolModal('photo-editor')}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full bg-blue-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base font-medium"
               >
                 Open Photo Editor
               </button>
             </div>
 
             {/* PDF Tools */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-3 bg-green-600 rounded-lg">
-                  <FileText className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-green-200">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-green-600 rounded-lg flex-shrink-0">
+                  <FileText className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">PDF Tools</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">PDF Tools</h3>
               </div>
-              <p className="text-gray-600 mb-4">Compress, merge, split, and convert PDF documents for applications.</p>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">Compress, merge, split, and convert PDF documents for applications.</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Compress</span>
                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Merge</span>
                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Split</span>
               </div>
               <button 
                 onClick={() => setActiveToolModal('pdf-tools')}
-                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+                className="w-full bg-green-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base font-medium"
               >
                 Open PDF Tools
               </button>
             </div>
 
             {/* Signature Creator */}
-            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-200">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-3 bg-purple-600 rounded-lg">
-                  <User className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-purple-200">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-purple-600 rounded-lg flex-shrink-0">
+                  <User className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Signature Creator</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Signature Creator</h3>
               </div>
-              <p className="text-gray-600 mb-4">Create professional digital signatures for official documents.</p>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">Create professional digital signatures for official documents.</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Draw</span>
                 <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Type</span>
                 <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Upload</span>
               </div>
               <button 
                 onClick={() => setActiveToolModal('signature-creator')}
-                className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                className="w-full bg-purple-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base font-medium"
               >
                 Create Signature
               </button>
             </div>
 
             {/* Document Scanner */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-3 bg-orange-600 rounded-lg">
-                  <Eye className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-orange-200">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-orange-600 rounded-lg flex-shrink-0">
+                  <Eye className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Document Scanner</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Document Scanner</h3>
               </div>
-              <p className="text-gray-600 mb-4">Scan and enhance physical documents using your camera.</p>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">Scan and enhance physical documents using your camera.</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">Scan</span>
                 <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">Enhance</span>
                 <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">OCR</span>
               </div>
               <button 
                 onClick={() => setActiveToolModal('document-scanner')}
-                className="w-full bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition-colors"
+                className="w-full bg-orange-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm sm:text-base font-medium"
               >
                 Open Scanner
               </button>
             </div>
 
             {/* Format Converter */}
-            <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border border-red-200">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-3 bg-red-600 rounded-lg">
-                  <RotateCw className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-red-200">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-red-600 rounded-lg flex-shrink-0">
+                  <RotateCw className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Format Converter</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Format Converter</h3>
               </div>
-              <p className="text-gray-600 mb-4">Convert between different file formats (JPG, PNG, PDF, etc.).</p>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">Convert between different file formats (JPG, PNG, PDF, etc.).</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">JPG</span>
                 <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">PNG</span>
                 <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">PDF</span>
               </div>
               <button 
                 onClick={() => setActiveToolModal('format-converter')}
-                className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors"
+                className="w-full bg-red-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base font-medium"
               >
                 Convert Files
               </button>
             </div>
 
             {/* Size Optimizer */}
-            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border border-teal-200">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-3 bg-teal-600 rounded-lg">
-                  <Scissors className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-teal-200">
+              <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                <div className="p-2 sm:p-3 bg-teal-600 rounded-lg flex-shrink-0">
+                  <Scissors className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Size Optimizer</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Size Optimizer</h3>
               </div>
-              <p className="text-gray-600 mb-4">Optimize file sizes to meet application requirements without quality loss.</p>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mb-3 sm:mb-4">Optimize file sizes to meet application requirements without quality loss.</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">Compress</span>
                 <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">Optimize</span>
                 <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">Batch</span>
               </div>
               <button 
                 onClick={() => setActiveToolModal('size-optimizer')}
-                className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition-colors"
+                className="w-full bg-teal-600 text-white py-2.5 sm:py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm sm:text-base font-medium"
               >
                 Optimize Files
               </button>
@@ -710,169 +888,170 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {/* My Documents Section - only for authenticated users */}
-      {isAuthenticated && activeTab === 'documents' && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Categories Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
-            <div className="space-y-2">
-              {documentCategories.map((category) => {
-                const Icon = category.icon
-                const count = category.id === 'all' 
-                  ? documents.length 
-                  : documents.filter(doc => doc.type === category.id).length
-                
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedCategory === category.id
-                        ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Icon className="h-4 w-4" />
-                      <span>{category.name}</span>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      selectedCategory === category.id
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {count}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Required Documents Checklist */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mt-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Required Documents</h2>
-            <div className="space-y-3">
-              {requiredDocuments.map((doc, index) => {
-                const isUploaded = documents.some(uploaded => 
-                  uploaded.name === doc.name && uploaded.status === 'verified'
-                )
-                
-                return (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      isUploaded 
-                        ? 'bg-green-500 border-green-500' 
-                        : doc.required 
-                          ? 'border-red-300' 
-                          : 'border-gray-300'
-                    }`}>
-                      {isUploaded && <CheckCircle className="h-3 w-3 text-white" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-sm font-medium ${
-                          isUploaded ? 'text-green-600' : 'text-gray-900'
-                        }`}>
-                          {doc.name}
-                        </span>
-                        {doc.required && !isUploaded && (
-                          <span className="text-xs text-red-500">*</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1">{doc.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Max: {doc.maxSize} | {doc.formats.join(', ')}
-                      </p>
-                    </div>
+      {/* Document Manager Section - only for authenticated users */}
+      {isAuthenticated && activeTab === 'manager' && (
+        <div className="space-y-4 sm:space-y-6">
+          {/* Document Manager Stats */}
+          {documentStats && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Documents</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">{documentStats.total_documents}</p>
                   </div>
-                )
-              })}
+                  <div className="p-2 sm:p-3 rounded-lg bg-blue-100 flex-shrink-0">
+                    <Folder className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Size</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">{documentStats.total_size_mb} MB</p>
+                  </div>
+                  <div className="p-2 sm:p-3 rounded-lg bg-green-100 flex-shrink-0">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Personal</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">{documentStats.category_breakdown?.personal || 0}</p>
+                  </div>
+                  <div className="p-2 sm:p-3 rounded-lg bg-purple-100 flex-shrink-0">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Educational</p>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mt-1">{documentStats.category_breakdown?.educational || 0}</p>
+                  </div>
+                  <div className="p-2 sm:p-3 rounded-lg bg-orange-100 flex-shrink-0">
+                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-orange-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Document Upload Section */}
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 mb-4 sm:mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Upload New Document</h2>
+              <button
+                onClick={() => loadUserDocuments()}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium self-start sm:self-auto"
+                disabled={isLoadingDocuments}
+              >
+                {isLoadingDocuments ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Document Type
+                </label>
+                <select
+                  value={selectedDocumentType}
+                  onChange={(e) => setSelectedDocumentType(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select document type</option>
+                  {documentTypes && Object.entries(documentTypes.categories).map(([category, types]) => (
+                    <optgroup key={category} label={category.charAt(0).toUpperCase() + category.slice(1)}>
+                      {types.map((type) => (
+                        <option key={type} value={type}>
+                          {documentManagerService.getDocumentTypeDisplayName(type)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload File
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleDocumentUpload(file);
+                  }}
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supported: PDF, JPG, PNG, DOC, DOCX (Max 50MB)
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Documents List */}
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {selectedCategory === 'all' ? 'All Documents' : 
-                   documentCategories.find(cat => cat.id === selectedCategory)?.name}
-                </h2>
+          {/* User Documents List */}
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                <h2 className="text-lg font-semibold text-gray-900">My Documents</h2>
                 <div className="text-sm text-gray-500">
-                  {filteredDocuments.length} documents
+                  {userDocuments.length} documents
                 </div>
               </div>
             </div>
 
             <div className="divide-y divide-gray-200">
-              {filteredDocuments.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Folder className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg">No documents found in this category.</p>
-                  <button
-                    onClick={() => setUploadModalOpen(true)}
-                    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Upload Your First Document
-                  </button>
+              {isLoadingDocuments ? (
+                <div className="p-8 sm:p-12 text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-500 text-sm sm:text-base">Loading documents...</p>
+                </div>
+              ) : userDocuments.length === 0 ? (
+                <div className="p-8 sm:p-12 text-center">
+                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 text-base sm:text-lg mb-2">No documents uploaded yet.</p>
+                  <p className="text-gray-400 text-sm">Upload your first document to get started.</p>
                 </div>
               ) : (
-                filteredDocuments.map((document) => (
-                  <div key={document.id} className="p-6 hover:bg-gray-50 transition-colors">
+                userDocuments.map((doc) => (
+                  <div key={doc.document_id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4">
+                      <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
                         <div className="flex-shrink-0">
-                          {getTypeIcon(document.type)}
+                          <div className={`p-2 rounded-lg ${documentManagerService.getDocumentCategoryColor(doc.document_type)}`}>
+                            <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                          </div>
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="font-semibold text-gray-900">{document.name}</h3>
-                            {document.isRequired && (
-                              <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
-                                Required
-                              </span>
-                            )}
-                            <div className="flex items-center space-x-1">
-                              {getStatusIcon(document.status)}
-                              <span className={`text-sm font-medium capitalize ${
-                                document.status === 'verified' ? 'text-green-600' :
-                                document.status === 'pending' ? 'text-yellow-600' :
-                                'text-red-600'
-                              }`}>
-                                {document.status}
-                              </span>
-                            </div>
+                          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                              {documentManagerService.getDocumentTypeDisplayName(doc.document_type)}
+                            </h3>
+                            <span className={`px-2 py-1 text-xs rounded-full ${documentManagerService.getDocumentCategoryColor(doc.document_type)} self-start sm:self-auto`}>
+                              {doc.document_type.replace(/_/g, ' ')}
+                            </span>
                           </div>
-                          <p className="text-gray-600 text-sm mb-2">{document.description}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <span>File: {document.fileName}</span>
-                            <span>Size: {document.fileSize}</span>
-                            <span>Uploaded: {document.uploadDate}</span>
-                            {document.expiryDate && (
-                              <span className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>Expires: {document.expiryDate}</span>
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-2 text-xs text-gray-500">
-                            Max size: {document.maxSize} | Allowed: {document.allowedFormats.join(', ')}
+                          <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-gray-500">
+                            <span>File: {doc.original_filename}</span>
+                            <span>Size: {documentManagerService.formatFileSize(doc.file_size_bytes)}</span>
+                            <span className="hidden sm:inline">Uploaded: {new Date(doc.upload_date).toLocaleDateString()}</span>
+                            <span className="sm:hidden">Uploaded: {new Date(doc.upload_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                          <Download className="h-4 w-4" />
-                        </button>
-                        <button className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                        <button 
+                          onClick={() => handleDocumentDelete(doc.document_id)}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -882,14 +1061,308 @@ export default function DocumentsPage() {
               )}
             </div>
           </div>
+
+          {/* Job Document Formatting */}
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Format Documents for Job</h2>
+            <p className="text-gray-600 text-sm sm:text-base mb-4 sm:mb-6">
+              Automatically format and package your documents according to job requirements.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+              <button
+                onClick={() => handleFormatForJob()}
+                disabled={isFormattingForJob || userDocuments.length === 0}
+                className="w-full sm:w-auto bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm sm:text-base"
+              >
+                {isFormattingForJob ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Formatting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Settings className="h-4 w-4" />
+                    <span>Format for Demo Job</span>
+                  </>
+                )}
+              </button>
+
+              {jobDocumentBundle && (
+                <button
+                  onClick={handleDownloadBundle}
+                  className="w-full sm:w-auto bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Download Bundle</span>
+                </button>
+              )}
+            </div>
+
+            {jobDocumentBundle && (
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="font-medium text-green-800 text-sm sm:text-base">Documents Ready!</span>
+                </div>
+                <p className="text-green-700 text-xs sm:text-sm">
+                  {jobDocumentBundle.total_documents} documents formatted and packaged for download.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* My Documents Dashboard - only for authenticated users */}
+      {isAuthenticated && activeTab === 'documents' && (
+        <div className="space-y-4 sm:space-y-6">
+          {/* Document Status Overview */}
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">Document Status Overview</h2>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg">
+                    <Folder className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-blue-600">Total</p>
+                    <p className="text-lg sm:text-xl font-bold text-blue-900">{stats.total}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="p-1.5 sm:p-2 bg-green-600 rounded-lg">
+                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-green-600">Verified</p>
+                    <p className="text-lg sm:text-xl font-bold text-green-900">{stats.verified}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-yellow-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="p-1.5 sm:p-2 bg-yellow-600 rounded-lg">
+                    <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-yellow-600">Pending</p>
+                    <p className="text-lg sm:text-xl font-bold text-yellow-900">{stats.pending}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="p-1.5 sm:p-2 bg-red-600 rounded-lg">
+                    <X className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-red-600">Missing</p>
+                    <p className="text-lg sm:text-xl font-bold text-red-900">{requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Document Completion</span>
+                <span className="text-sm text-gray-500">{Math.round((userDocuments.length / Math.max(requiredDocuments.length, 1)) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${Math.min(100, Math.round((userDocuments.length / Math.max(requiredDocuments.length, 1)) * 100))}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Document Categories Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {/* Uploaded Documents */}
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Uploaded Documents</h3>
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs sm:text-sm rounded-full font-medium">
+                    {userDocuments.length} uploaded
+                  </span>
+                </div>
+              </div>
+              <div className="p-4 sm:p-6">
+                {userDocuments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Folder className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500 mb-4">No documents uploaded yet</p>
+                    <button
+                      onClick={() => setUploadModalOpen(true)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      Upload First Document
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(showAllUploadedDocs ? userDocuments : userDocuments.slice(0, 5)).map((document, index) => (
+                      <div key={document.document_id || document.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            {getDocumentDisplayName(document.document_type || document.type).includes('Photo') ? (
+                              <Image className="h-4 w-4 text-blue-600" />
+                            ) : getDocumentDisplayName(document.document_type || document.type).includes('Certificate') ? (
+                              <Award className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-blue-600" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 text-sm">{getDocumentDisplayName(document.document_type || document.type)}</p>
+                            <div className="flex items-center space-x-2 text-xs text-gray-500">
+                              <span className="flex items-center">
+                                <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
+                                {document.status || 'Active'}
+                              </span>
+                              <span>•</span>
+                              <span>{document.file_size_bytes ? `${(document.file_size_bytes / 1024).toFixed(1)} KB` : document.fileSize || 'Unknown size'}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            onClick={() => handleViewDocument(document)}
+                            className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="View document"
+                          >
+                            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDownloadDocument(document)}
+                            className="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                            title="Download document"
+                          >
+                            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {userDocuments.length > 5 && (
+                      <button 
+                        onClick={() => setShowAllUploadedDocs(!showAllUploadedDocs)}
+                        className="w-full text-center py-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        {showAllUploadedDocs ? 'Show less' : `View all ${userDocuments.length} documents`}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Missing Documents */}
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Missing Documents</h3>
+                  <span className="px-2 py-1 bg-red-100 text-red-700 text-xs sm:text-sm rounded-full font-medium">
+                    {requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length} missing
+                  </span>
+                </div>
+              </div>
+              <div className="p-4 sm:p-6">
+                {requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                    <p className="text-green-600 font-medium">All required documents uploaded!</p>
+                    <p className="text-gray-500 text-sm mt-1">You're ready to apply for jobs</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {requiredDocuments
+                      .filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active))
+                      .map((doc, index) => (
+                      <div key={index} className="flex items-start justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                        <div className="flex items-start space-x-3">
+                          <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            doc.required ? 'border-red-400 bg-red-100' : 'border-gray-300'
+                          }`}>
+                            {doc.required && <X className="h-2.5 w-2.5 text-red-600" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center space-x-2">
+                              <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                              {doc.required && (
+                                <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded font-medium">Required</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1">{doc.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Max: {doc.maxSize} | Formats: {doc.formats.join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setUploadModalOpen(true)}
+                          className="ml-3 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors flex-shrink-0"
+                        >
+                          Upload
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-700 rounded-lg sm:rounded-xl p-4 sm:p-6 text-white">
+            <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <button
+                onClick={() => setUploadModalOpen(true)}
+                className="bg-white/20 hover:bg-white/30 rounded-lg p-3 sm:p-4 text-left transition-colors"
+              >
+                <Plus className="h-5 w-5 mb-2" />
+                <p className="font-medium text-sm sm:text-base">Upload Document</p>
+                <p className="text-xs sm:text-sm text-white/80">Add new documents</p>
+              </button>
+              <button
+                onClick={() => setActiveTab('manager')}
+                className="bg-white/20 hover:bg-white/30 rounded-lg p-3 sm:p-4 text-left transition-colors"
+              >
+                <Upload className="h-5 w-5 mb-2" />
+                <p className="font-medium text-sm sm:text-base">Document Manager</p>
+                <p className="text-xs sm:text-sm text-white/80">Manage & format docs</p>
+              </button>
+              <button
+                onClick={() => setActiveTab('tools')}
+                className="bg-white/20 hover:bg-white/30 rounded-lg p-3 sm:p-4 text-left transition-colors"
+              >
+                <Settings className="h-5 w-5 mb-2" />
+                <p className="font-medium text-sm sm:text-base">Document Tools</p>
+                <p className="text-xs sm:text-sm text-white/80">Edit & optimize files</p>
+              </button>
+              <button className="bg-white/20 hover:bg-white/30 rounded-lg p-3 sm:p-4 text-left transition-colors">
+                <Download className="h-5 w-5 mb-2" />
+                <p className="font-medium text-sm sm:text-base">Download All</p>
+                <p className="text-xs sm:text-sm text-white/80">Get document bundle</p>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Upload Modal - only show for authenticated users */}
       {isAuthenticated && uploadModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Upload Document</h2>
               <button
@@ -1152,47 +1625,66 @@ export default function DocumentsPage() {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Max File Size</label>
-                          <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-                            <option value="100kb">100 KB</option>
-                            <option value="500kb">500 KB</option>
-                            <option value="1mb">1 MB</option>
-                            <option value="2mb">2 MB</option>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Max File Size (KB)</label>
+                          <select 
+                            value={maxFileSizeKb}
+                            onChange={(e) => setMaxFileSizeKb(parseInt(e.target.value))}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value={50}>50 KB (Ultra Compressed)</option>
+                            <option value={100}>100 KB (High Compression)</option>
+                            <option value={250}>250 KB (Medium Compression)</option>
+                            <option value={500}>500 KB (Low Compression)</option>
+                            <option value={1024}>1 MB (Minimal Compression)</option>
+                            <option value={2048}>2 MB (Maximum Size)</option>
                           </select>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Range: 10KB - 2MB (enforced automatically)
+                          </p>
                         </div>
-                        <label className="flex items-center space-x-2">
-                          <input type="checkbox" className="rounded border-gray-300" />
-                          <span className="text-sm text-gray-700">Maintain aspect ratio</span>
-                        </label>
+                        <div className="space-y-3">
+                          <label className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={maintainAspectRatio}
+                              onChange={(e) => setMaintainAspectRatio(e.target.checked)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm font-medium text-gray-900">Maintain Aspect Ratio</span>
+                              <p className="text-xs text-gray-600">Keep original proportions (recommended for photos)</p>
+                            </div>
+                          </label>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Background Options */}
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                        <Palette className="h-4 w-4 mr-2" />
-                        Change Background
-                      </h4>
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2">
-                          <button className="aspect-square bg-white border-2 border-gray-300 rounded-lg hover:border-blue-500 flex items-center justify-center">
-                            <span className="text-xs font-medium">White</span>
-                          </button>
-                          <button className="aspect-square bg-black border-2 border-gray-300 rounded-lg hover:border-blue-500 flex items-center justify-center">
-                            <span className="text-xs font-medium text-white">Black</span>
-                          </button>
-                          <button className="aspect-square bg-blue-500 border-2 border-gray-300 rounded-lg hover:border-blue-500 flex items-center justify-center">
-                            <span className="text-xs font-medium text-white">Blue</span>
-                          </button>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Custom Color</label>
-                          <input
-                            type="color"
-                            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                            defaultValue="#ffffff"
-                          />
-                        </div>
+
+
+                  </div>
+
+                  {/* Advanced Processing Options */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Processing Summary
+                    </h4>
+                    <div className="space-y-2 text-sm text-gray-700">
+                      <div className="flex justify-between">
+                        <span>Output Size:</span>
+                        <span className="font-medium">{imageWidth}×{imageHeight}px</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Format:</span>
+                        <span className="font-medium">{outputFormat}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Max File Size:</span>
+                        <span className="font-medium">{maxFileSizeKb} KB</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Aspect Ratio:</span>
+                        <span className="font-medium">{maintainAspectRatio ? 'Maintained' : 'Stretched'}</span>
                       </div>
                     </div>
                   </div>
@@ -1209,18 +1701,17 @@ export default function DocumentsPage() {
                       setProcessedFiles([]); // Clear previous results
                       
                       try {
-                        const processParams = {
+                        const params = {
                           width: imageWidth,
                           height: imageHeight,
                           output_format: outputFormat,
-                          background_color: undefined, // Will be enhanced later with color picker
-                          maintain_aspect_ratio: false, // Will be enhanced later with checkbox
-                          max_file_size_kb: undefined // Will be enhanced later with size selector
+                          maintain_aspect_ratio: maintainAspectRatio,
+                          max_file_size_kb: maxFileSizeKb
                         };
                         
                         if (uploadedFiles.length === 1) {
                           // Process single image
-                          const result = await photoEditorService.processSingleImage(uploadedFiles[0], processParams);
+                          const result = await photoEditorService.processSingleImage(uploadedFiles[0], params);
                           
                           const processedFile = {
                             id: 0,
@@ -1238,7 +1729,7 @@ export default function DocumentsPage() {
                           setProcessedFiles([processedFile]);
                         } else {
                           // Process batch of images
-                          const batchResult = await photoEditorService.processBatchImages(uploadedFiles, processParams);
+                          const batchResult = await photoEditorService.processBatchImages(uploadedFiles, params);
                           
                           const processedFiles = batchResult.results.map((result, index) => ({
                             id: index,
@@ -1297,57 +1788,135 @@ export default function DocumentsPage() {
                     </div>
                   )}
 
-                  {/* Processed Files Results */}
+                  {/* Advanced Results Preview */}
                   {processedFiles.length > 0 && !isProcessing && (
-                    <div className="bg-green-50 rounded-xl p-4">
-                      <h4 className="font-semibold text-green-900 mb-3 flex items-center">
-                        <CheckCircle className="h-5 w-5 mr-2" />
-                        Processed Images ({processedFiles.length})
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {processedFiles.map((file) => (
-                          <div key={file.id} className="bg-white rounded-lg p-4 border border-green-200">
-                            <div className="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-4">
-                              {/* Thumbnail and File Info Container */}
-                              <div className="flex items-start space-x-4 flex-1 min-w-0">
-                                {/* Thumbnail */}
-                                <div className="flex-shrink-0">
-                                  <div className="w-16 h-16 bg-gray-100 rounded-lg border-2 border-green-200 flex items-center justify-center">
-                                    <Image className="h-8 w-8 text-green-600" />
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="font-semibold text-green-900 flex items-center">
+                          <CheckCircle className="h-5 w-5 mr-2" />
+                          Processing Complete ({processedFiles.length} {processedFiles.length === 1 ? 'image' : 'images'})
+                        </h4>
+                        <div className="flex items-center space-x-2 text-sm text-green-700">
+                          <span className="px-2 py-1 bg-green-100 rounded-full">
+                            Standard Processing
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-6">
+                        {processedFiles.map((file, index) => (
+                          <div key={file.id} className="bg-white rounded-xl p-6 border border-green-200 shadow-sm">
+                            {/* Before/After Preview */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                              {/* Original Image */}
+                              <div className="space-y-3">
+                                <h5 className="font-medium text-gray-900 flex items-center">
+                                  <FileImage className="h-4 w-4 mr-2" />
+                                  Original
+                                </h5>
+                                <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square">
+                                  {uploadedFiles[index] && (
+                                    <img
+                                      src={URL.createObjectURL(uploadedFiles[index])}
+                                      alt="Original"
+                                      className="w-full h-full object-contain"
+                                    />
+                                  )}
+                                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                                    {file.originalName}
                                   </div>
                                 </div>
-                                
-                                {/* File Info */}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate" title={file.processedName}>
-                                    {file.processedName}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {file.dimensions} • {file.format} • {file.size} KB
-                                  </p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    Original: {file.originalName}
-                                  </p>
+                                <div className="text-xs text-gray-500 space-y-1">
+                                  <div>Size: {Math.round(uploadedFiles[index]?.size / 1024)} KB</div>
+                                  <div>Format: {uploadedFiles[index]?.type.split('/')[1].toUpperCase()}</div>
                                 </div>
                               </div>
                               
-                              {/* Download Button */}
-                              <div className="flex-shrink-0 w-full sm:w-auto">
-                                <button
-                                  onClick={async () => {
-                                    try {
-                                      await photoEditorService.downloadImage(file.downloadUrl, file.processedName);
-                                    } catch (error) {
-                                      console.error('Download failed:', error);
-                                      alert('Download failed. Please try again.');
-                                    }
-                                  }}
-                                  className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  Download
-                                </button>
+                              {/* Processed Image */}
+                              <div className="space-y-3">
+                                <h5 className="font-medium text-gray-900 flex items-center">
+                                  <Camera className="h-4 w-4 mr-2 text-green-600" />
+                                  Processed
+                                </h5>
+                                <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square border-2 border-green-200">
+                                  {file.thumbnailUrl ? (
+                                    <img
+                                      src={file.thumbnailUrl}
+                                      alt="Processed"
+                                      className="w-full h-full object-contain"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <div className="text-center space-y-2">
+                                        <div className="w-16 h-16 bg-green-100 rounded-lg mx-auto flex items-center justify-center">
+                                          <Image className="h-8 w-8 text-green-600" />
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900">Preview Ready</p>
+                                        <p className="text-xs text-gray-500">Click download to view</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
+                                    {file.processedName}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-green-700 space-y-1 bg-green-50 p-2 rounded">
+                                  <div className="flex justify-between">
+                                    <span>Size:</span>
+                                    <span className="font-medium">{file.size} KB</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Dimensions:</span>
+                                    <span className="font-medium">{file.dimensions}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Format:</span>
+                                    <span className="font-medium">{file.format}</span>
+                                  </div>
+                                </div>
                               </div>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await photoEditorService.downloadImage(file.downloadUrl, file.processedName);
+                                  } catch (error) {
+                                    console.error('Download failed:', error);
+                                    alert('Download failed. Please try again.');
+                                  }
+                                }}
+                                className="flex-1 inline-flex items-center justify-center px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download Processed Image
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    // Fetch the processed image for preview from backend server
+                                    const backendUrl = `http://localhost:8000/api/v1${file.downloadUrl}`;
+                                    const response = await fetch(backendUrl);
+                                    if (response.ok) {
+                                      const blob = await response.blob();
+                                      const imageUrl = URL.createObjectURL(blob);
+                                      setPreviewImage(imageUrl);
+                                      setShowPreviewModal(true);
+                                    } else {
+                                      alert('Failed to load preview. Please try downloading the image.');
+                                    }
+                                  } catch (error) {
+                                    console.error('Preview failed:', error);
+                                    alert('Failed to load preview. Please try downloading the image.');
+                                  }
+                                }}
+                                className="px-4 py-3 bg-white border border-green-300 text-green-700 font-medium rounded-lg hover:bg-green-50 transition-colors"
+                              >
+                                <Eye className="h-4 w-4 mr-2 inline" />
+                                Preview
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -1417,23 +1986,80 @@ export default function DocumentsPage() {
                     <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, PDF, DOCX, TXT</p>
                   </div>
 
+                  {/* Uploaded Files Display */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="bg-white rounded-xl p-4 border border-red-200">
+                      <h4 className="font-semibold text-gray-900 mb-3">Selected Files ({uploadedFiles.length})</h4>
+                      <div className="space-y-2">
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-5 w-5 text-red-600" />
+                              <div>
+                                <p className="font-medium text-gray-900">{file.name}</p>
+                                <p className="text-sm text-gray-500">{Math.round(file.size / 1024)} KB</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const newFiles = uploadedFiles.filter((_, i) => i !== index);
+                                setUploadedFiles(newFiles);
+                              }}
+                              className="p-1 text-red-600 hover:bg-red-100 rounded"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Conversion Options */}
                   <div className="bg-gray-50 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-3">Convert To</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                      <button 
+                        onClick={() => setConversionFormat('JPG')}
+                        className={`p-3 border rounded-lg text-center transition-colors ${
+                          conversionFormat === 'JPG' 
+                            ? 'border-red-500 bg-red-50 text-red-700' 
+                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                        }`}
+                      >
                         <FileImage className="h-6 w-6 mx-auto mb-1 text-red-600" />
                         <span className="text-sm font-medium">JPG</span>
                       </button>
-                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                      <button 
+                        onClick={() => setConversionFormat('PNG')}
+                        className={`p-3 border rounded-lg text-center transition-colors ${
+                          conversionFormat === 'PNG' 
+                            ? 'border-red-500 bg-red-50 text-red-700' 
+                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                        }`}
+                      >
                         <Image className="h-6 w-6 mx-auto mb-1 text-red-600" />
                         <span className="text-sm font-medium">PNG</span>
                       </button>
-                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                      <button 
+                        onClick={() => setConversionFormat('PDF')}
+                        className={`p-3 border rounded-lg text-center transition-colors ${
+                          conversionFormat === 'PDF' 
+                            ? 'border-red-500 bg-red-50 text-red-700' 
+                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                        }`}
+                      >
                         <FileText className="h-6 w-6 mx-auto mb-1 text-red-600" />
                         <span className="text-sm font-medium">PDF</span>
                       </button>
-                      <button className="p-3 border border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 text-center">
+                      <button 
+                        onClick={() => setConversionFormat('DOCX')}
+                        className={`p-3 border rounded-lg text-center transition-colors ${
+                          conversionFormat === 'DOCX' 
+                            ? 'border-red-500 bg-red-50 text-red-700' 
+                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                        }`}
+                      >
                         <File className="h-6 w-6 mx-auto mb-1 text-red-600" />
                         <span className="text-sm font-medium">DOCX</span>
                       </button>
@@ -1456,9 +2082,40 @@ export default function DocumentsPage() {
                         <span>Converting...</span>
                       </>
                     ) : (
-                      <span>Convert Files ({uploadedFiles.length} files)</span>
+                      <span>Convert to {conversionFormat} ({uploadedFiles.length} files)</span>
                     )}
                   </button>
+
+                  {/* Results */}
+                  {processedFiles.length > 0 && (
+                    <div className="bg-red-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-red-900 mb-3 flex items-center">
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Conversion Complete
+                      </h4>
+                      <div className="space-y-3">
+                        {processedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-6 w-6 text-red-600" />
+                              <div>
+                                <p className="font-medium text-gray-900">{file.processedName}</p>
+                                <p className="text-sm text-gray-600">
+                                  {file.format} • {(file.size).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => downloadFile(file.downloadUrl, file.processedName, 'converter')}
+                              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                            >
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1507,6 +2164,20 @@ export default function DocumentsPage() {
                         {uploadedFiles.map((file, index) => (
                           <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleViewDocument(file)}
+                                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                title="View document"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDownloadDocument(file)}
+                                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                title="Download document"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
                               <FileText className="h-4 w-4 text-green-600" />
                               <span className="text-sm text-gray-700">{file.name}</span>
                               <span className="text-xs text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
@@ -1527,68 +2198,63 @@ export default function DocumentsPage() {
                   )}
 
                   {/* PDF Operations */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
                     <button 
-                      onClick={() => setPdfOperation('merge')}
-                      className={`p-4 border rounded-xl text-center transition-colors ${
-                        pdfOperation === 'merge' 
+                      onClick={() => setPdfOperation('combine_documents')}
+                      className={`p-3 sm:p-4 border rounded-xl text-center transition-colors ${
+                        pdfOperation === 'combine_documents' 
                           ? 'border-green-500 bg-green-50' 
                           : 'border-green-300 hover:bg-green-50'
                       }`}
                     >
-                      <Combine className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                      <span className="font-semibold text-gray-900">Combine PDFs</span>
-                      <p className="text-sm text-gray-600 mt-1">Merge multiple files into one PDF</p>
+                      <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto mb-2" />
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base">Combine Documents</span>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Merge certificates, marksheets & ID images into PDF</p>
                     </button>
                     <button 
-                      onClick={() => setPdfOperation('split')}
-                      className={`p-4 border rounded-xl text-center transition-colors ${
-                        pdfOperation === 'split' 
+                      onClick={() => setPdfOperation('pdf_to_images')}
+                      className={`p-3 sm:p-4 border rounded-xl text-center transition-colors ${
+                        pdfOperation === 'pdf_to_images' 
                           ? 'border-green-500 bg-green-50' 
                           : 'border-green-300 hover:bg-green-50'
                       }`}
                     >
-                      <Scissors className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                      <span className="font-semibold text-gray-900">Split PDF</span>
-                      <p className="text-sm text-gray-600 mt-1">Extract pages from PDF</p>
+                      <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto mb-2" />
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base">PDF to Images</span>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Extract each page as separate image</p>
                     </button>
                     <button 
                       onClick={() => setPdfOperation('compress')}
-                      className={`p-4 border rounded-xl text-center transition-colors ${
+                      className={`p-3 sm:p-4 border rounded-xl text-center transition-colors ${
                         pdfOperation === 'compress' 
                           ? 'border-green-500 bg-green-50' 
                           : 'border-green-300 hover:bg-green-50'
                       }`}
                     >
-                      <Move className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                      <span className="font-semibold text-gray-900">Compress PDF</span>
-                      <p className="text-sm text-gray-600 mt-1">Reduce file size</p>
+                      <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto mb-2" />
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base">Compress PDF</span>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Reduce file size</p>
+                    </button>
+                    <button 
+                      onClick={() => setPdfOperation('combine_pdfs')}
+                      className={`p-3 sm:p-4 border rounded-xl text-center transition-colors ${
+                        pdfOperation === 'combine_pdfs' 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-green-300 hover:bg-green-50'
+                      }`}
+                    >
+                      <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto mb-2" />
+                      <span className="font-semibold text-gray-900 text-sm sm:text-base">Combine PDFs</span>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Merge multiple PDF files into one</p>
                     </button>
                   </div>
 
                   {/* Operation Options */}
-                  {pdfOperation === 'split' && (
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3">Split Options</h4>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Pages per file</label>
-                          <input
-                            type="number"
-                            value={splitPagesPerFile}
-                            onChange={(e) => setSplitPagesPerFile(parseInt(e.target.value) || 1)}
-                            min="1"
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {pdfOperation === 'compress' && (
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h4 className="font-semibold text-gray-900 mb-3">Compression Level</h4>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {['low', 'medium', 'high'].map((level) => (
                           <button
                             key={level}
@@ -1606,6 +2272,45 @@ export default function DocumentsPage() {
                     </div>
                   )}
 
+                  {pdfOperation === 'pdf_to_images' && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Image Format</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {['PNG', 'JPG'].map((format) => (
+                          <button
+                            key={format}
+                            onClick={() => setOutputFormat(format as 'JPG' | 'PNG' | 'PDF')}
+                            className={`p-3 border rounded-lg text-center transition-colors ${
+                              outputFormat === format
+                                ? 'border-green-500 bg-green-50 text-green-700'
+                                : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                            }`}
+                          >
+                            <span className="text-sm font-medium">{format}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(pdfOperation === 'combine_documents' || pdfOperation === 'combine_pdfs') && (
+                    <div className="bg-blue-50 rounded-xl p-4">
+                      <div className="flex items-start space-x-3">
+                        <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-blue-900 mb-1">
+                            {pdfOperation === 'combine_documents' ? 'Document Combination' : 'PDF Combination'}
+                          </h4>
+                          <p className="text-sm text-blue-800">
+                            {pdfOperation === 'combine_documents' 
+                              ? 'Upload certificates, marksheets, ID images (JPG, PNG, PDF) to combine into a single PDF document.'
+                              : 'Upload multiple PDF files to combine them into a single PDF document.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Process Button */}
                   <button 
                     onClick={processPDFTool}
@@ -1619,10 +2324,23 @@ export default function DocumentsPage() {
                     {isProcessing ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Processing PDF...</span>
+                        <span>
+                          {pdfOperation === 'combine_documents' && 'Combining documents...'}
+                          {pdfOperation === 'pdf_to_images' && 'Converting to images...'}
+                          {pdfOperation === 'combine_pdfs' && 'Combining PDFs...'}
+                          {pdfOperation === 'compress' && 'Compressing PDF...'}
+                          {pdfOperation === 'merge' && 'Merging PDFs...'}
+                        </span>
                       </>
                     ) : (
-                      <span>Process PDF ({uploadedFiles.length} files)</span>
+                      <span>
+                        {pdfOperation === 'combine_documents' && 'Combine Documents'}
+                        {pdfOperation === 'pdf_to_images' && 'Convert to Images'}
+                        {pdfOperation === 'combine_pdfs' && 'Combine PDFs'}
+                        {pdfOperation === 'compress' && 'Compress PDF'}
+                        {pdfOperation === 'merge' && 'Merge PDFs'}
+                        {' '}({uploadedFiles.length} files)
+                      </span>
                     )}
                   </button>
 
@@ -1631,7 +2349,13 @@ export default function DocumentsPage() {
                     <div className="bg-green-50 rounded-xl p-4">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
-                        <span className="text-green-900 font-medium">Processing your PDF...</span>
+                        <span className="text-green-900 font-medium">
+                          {pdfOperation === 'combine_documents' && 'Combining your documents...'}
+                          {pdfOperation === 'pdf_to_images' && 'Converting PDF to images...'}
+                          {pdfOperation === 'combine_pdfs' && 'Combining your PDFs...'}
+                          {pdfOperation === 'compress' && 'Compressing your PDF...'}
+                          {pdfOperation === 'merge' && 'Merging your PDFs...'}
+                        </span>
                       </div>
                       <div className="w-full bg-green-200 rounded-full h-2">
                         <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
@@ -1695,6 +2419,28 @@ export default function DocumentsPage() {
                       <PenTool className="h-8 w-8 text-purple-600 mx-auto mb-3" />
                       <span className="font-semibold text-gray-900 block">Draw</span>
                       <p className="text-sm text-gray-600 mt-1">Draw your signature with mouse or touch</p>
+                      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setSignatureType('text')}
+                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            signatureType === 'text'
+                              ? 'bg-white text-purple-600 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Type Text
+                        </button>
+                        <button
+                          onClick={() => setSignatureType('draw')}
+                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            signatureType === 'draw'
+                              ? 'bg-white text-purple-600 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Draw Signature
+                        </button>
+                      </div>
                     </button>
                     <button 
                       onClick={() => setSignatureType('text')}
@@ -1707,18 +2453,6 @@ export default function DocumentsPage() {
                       <FileText className="h-8 w-8 text-purple-600 mx-auto mb-3" />
                       <span className="font-semibold text-gray-900 block">Type</span>
                       <p className="text-sm text-gray-600 mt-1">Type your name in signature fonts</p>
-                    </button>
-                    <button 
-                      onClick={() => setSignatureType('upload')}
-                      className={`p-6 border-2 rounded-xl text-center transition-colors ${
-                        signatureType === 'upload' 
-                          ? 'border-purple-500 bg-purple-50' 
-                          : 'border-purple-300 hover:bg-purple-50'
-                      }`}
-                    >
-                      <Upload className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                      <span className="font-semibold text-gray-900 block">Upload</span>
-                      <p className="text-sm text-gray-600 mt-1">Upload an image of your signature</p>
                     </button>
                   </div>
 
@@ -1741,63 +2475,110 @@ export default function DocumentsPage() {
                     </div>
                   )}
 
-                  {signatureType === 'upload' && (
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3">Upload Signature Image</h4>
-                      {uploadedFiles.length === 0 ? (
-                        <div className="border-2 border-dashed border-purple-300 rounded-xl p-6 text-center">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            id="signature-upload"
-                            onChange={(e) => {
-                              if (e.target.files) {
-                                setUploadedFiles(Array.from(e.target.files))
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor="signature-upload"
-                            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Choose Image
-                          </label>
-                          <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG (Max 5MB)</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {uploadedFiles.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg">
-                              <div className="flex items-center space-x-2">
-                                <Image className="h-4 w-4 text-purple-600" />
-                                <span className="text-sm text-gray-700">{file.name}</span>
-                              </div>
-                              <button
-                                onClick={() => setUploadedFiles([])}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {signatureType === 'draw' && (
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h4 className="font-semibold text-gray-900 mb-3">Draw Your Signature</h4>
-                      <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg h-40 flex items-center justify-center">
-                        <p className="text-gray-500">Drawing canvas coming soon</p>
+                      <div className="bg-white border-2 border-gray-300 rounded-lg overflow-hidden">
+                        <canvas
+                          ref={(canvas) => {
+                            if (canvas && canvas !== canvasRef) {
+                              setCanvasRef(canvas);
+                              const ctx = canvas.getContext('2d');
+                              if (ctx) {
+                                ctx.fillStyle = 'white';
+                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                ctx.strokeStyle = '#000000';
+                                ctx.lineWidth = 2;
+                                ctx.lineCap = 'round';
+                                ctx.lineJoin = 'round';
+                              }
+                            }
+                          }}
+                          width={400}
+                          height={160}
+                          className="w-full h-40 cursor-crosshair"
+                          onMouseDown={(e) => {
+                            setIsDrawing(true);
+                            const canvas = e.currentTarget;
+                            const rect = canvas.getBoundingClientRect();
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              ctx.beginPath();
+                              ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                            }
+                          }}
+                          onMouseMove={(e) => {
+                            if (!isDrawing) return;
+                            const canvas = e.currentTarget;
+                            const rect = canvas.getBoundingClientRect();
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                              ctx.stroke();
+                            }
+                          }}
+                          onMouseUp={() => {
+                            setIsDrawing(false);
+                            if (canvasRef) {
+                              setSignatureData(canvasRef.toDataURL('image/png'));
+                            }
+                          }}
+                          onMouseLeave={() => {
+                            setIsDrawing(false);
+                          }}
+                          onTouchStart={(e) => {
+                            e.preventDefault();
+                            setIsDrawing(true);
+                            const canvas = e.currentTarget;
+                            const rect = canvas.getBoundingClientRect();
+                            const touch = e.touches[0];
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              ctx.beginPath();
+                              ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                            }
+                          }}
+                          onTouchMove={(e) => {
+                            e.preventDefault();
+                            if (!isDrawing) return;
+                            const canvas = e.currentTarget;
+                            const rect = canvas.getBoundingClientRect();
+                            const touch = e.touches[0];
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                              ctx.stroke();
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            setIsDrawing(false);
+                            if (canvasRef) {
+                              setSignatureData(canvasRef.toDataURL('image/png'));
+                            }
+                          }}
+                        />
                       </div>
                       <div className="flex justify-between items-center mt-4">
                         <div className="flex space-x-2">
-                          <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Clear</button>
-                          <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">Undo</button>
+                          <button 
+                            onClick={() => {
+                              if (canvasRef) {
+                                const ctx = canvasRef.getContext('2d');
+                                if (ctx) {
+                                  ctx.fillStyle = 'white';
+                                  ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
+                                  setSignatureData('');
+                                }
+                              }
+                            }}
+                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                          >
+                            Clear
+                          </button>
                         </div>
+                        <p className="text-xs text-gray-500">Draw your signature above</p>
                       </div>
                     </div>
                   )}
@@ -1805,9 +2586,9 @@ export default function DocumentsPage() {
                   {/* Create Button */}
                   <button 
                     onClick={processSignature}
-                    disabled={isProcessing || (signatureType === 'text' && !signatureText.trim()) || (signatureType === 'upload' && uploadedFiles.length === 0)}
+                    disabled={isProcessing || (signatureType === 'text' && !signatureText.trim()) || (signatureType === 'draw' && !signatureData)}
                     className={`w-full py-3 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2 ${
-                      isProcessing || (signatureType === 'text' && !signatureText.trim()) || (signatureType === 'upload' && uploadedFiles.length === 0)
+                      isProcessing || (signatureType === 'text' && !signatureText.trim()) || (signatureType === 'draw' && !signatureData)
                         ? 'bg-gray-400 text-white cursor-not-allowed'
                         : 'bg-purple-600 text-white hover:bg-purple-700'
                     }`}
@@ -2129,6 +2910,50 @@ export default function DocumentsPage() {
               )}
 
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-4xl max-h-full bg-white rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Image Preview</h3>
+              <button
+                onClick={() => {
+                  setShowPreviewModal(false);
+                  if (previewImage) {
+                    URL.revokeObjectURL(previewImage);
+                    setPreviewImage(null);
+                  }
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4">
+              <img
+                src={previewImage}
+                alt="Processed Image Preview"
+                className="max-w-full max-h-[70vh] object-contain mx-auto"
+              />
+            </div>
+            <div className="flex justify-center p-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowPreviewModal(false);
+                  if (previewImage) {
+                    URL.revokeObjectURL(previewImage);
+                    setPreviewImage(null);
+                  }
+                }}
+                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

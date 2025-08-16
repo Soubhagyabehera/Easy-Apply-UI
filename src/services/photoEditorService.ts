@@ -3,7 +3,7 @@
  * Handles API calls to the backend photo editor endpoints
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { apiClient, API_ENDPOINTS } from '../config/api';
 
 export interface ProcessImageRequest {
   width: number;
@@ -12,6 +12,8 @@ export interface ProcessImageRequest {
   background_color?: string;
   maintain_aspect_ratio: boolean;
   max_file_size_kb?: number;
+  remove_background?: boolean;
+  auto_face_crop?: boolean;
 }
 
 export interface ProcessImageResponse {
@@ -59,11 +61,6 @@ export interface ValidationResponse {
 }
 
 class PhotoEditorService {
-  private baseUrl: string;
-
-  constructor() {
-    this.baseUrl = `${API_BASE_URL}/photo-editor`;
-  }
 
   /**
    * Process a single image with specified parameters
@@ -78,6 +75,8 @@ class PhotoEditorService {
     formData.append('height', params.height.toString());
     formData.append('output_format', params.output_format);
     formData.append('maintain_aspect_ratio', params.maintain_aspect_ratio.toString());
+    formData.append('remove_background', (params.remove_background || false).toString());
+    formData.append('auto_face_crop', (params.auto_face_crop || false).toString());
     
     if (params.background_color) {
       formData.append('background_color', params.background_color);
@@ -88,17 +87,13 @@ class PhotoEditorService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/process-single`, {
-        method: 'POST',
-        body: formData,
+      const response = await apiClient.post(API_ENDPOINTS.photoEditor.processSingle, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Processing failed');
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error('Error processing single image:', error);
       throw error;
@@ -122,6 +117,8 @@ class PhotoEditorService {
     formData.append('height', params.height.toString());
     formData.append('output_format', params.output_format);
     formData.append('maintain_aspect_ratio', params.maintain_aspect_ratio.toString());
+    formData.append('remove_background', (params.remove_background || false).toString());
+    formData.append('auto_face_crop', (params.auto_face_crop || false).toString());
     
     if (params.background_color) {
       formData.append('background_color', params.background_color);
@@ -132,17 +129,13 @@ class PhotoEditorService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/process-batch`, {
-        method: 'POST',
-        body: formData,
+      const response = await apiClient.post(API_ENDPOINTS.photoEditor.processBatch, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Batch processing failed');
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error('Error processing batch images:', error);
       throw error;
@@ -157,17 +150,13 @@ class PhotoEditorService {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${this.baseUrl}/validate-image`, {
-        method: 'POST',
-        body: formData,
+      const response = await apiClient.post(API_ENDPOINTS.photoEditor.validate, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Validation failed');
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error('Error validating image:', error);
       throw error;
@@ -179,13 +168,9 @@ class PhotoEditorService {
    */
   async getSupportedFormats(): Promise<SupportedFormats> {
     try {
-      const response = await fetch(`${this.baseUrl}/formats`);
+      const response = await apiClient.get(API_ENDPOINTS.photoEditor.formats);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch supported formats');
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error('Error fetching supported formats:', error);
       throw error;
@@ -197,7 +182,7 @@ class PhotoEditorService {
    */
   async downloadImage(downloadUrl: string, filename: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}${downloadUrl}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}${downloadUrl}`);
       
       if (!response.ok) {
         throw new Error('Download failed');
@@ -223,7 +208,7 @@ class PhotoEditorService {
    */
   async downloadBatchZip(downloadUrl: string, filename: string = 'processed_images.zip'): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}${downloadUrl}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}${downloadUrl}`);
       
       if (!response.ok) {
         throw new Error('Batch download failed');
@@ -248,7 +233,7 @@ class PhotoEditorService {
    * Get thumbnail URL for display
    */
   getThumbnailUrl(thumbnailUrl: string): string {
-    return `${API_BASE_URL}${thumbnailUrl}`;
+    return `${apiClient.defaults.baseURL}${thumbnailUrl}`;
   }
 
   /**
@@ -256,13 +241,9 @@ class PhotoEditorService {
    */
   async healthCheck(): Promise<{ status: string; service: string; features: Record<string, boolean> }> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`);
+      const response = await apiClient.get(API_ENDPOINTS.photoEditor.health);
       
-      if (!response.ok) {
-        throw new Error('Health check failed');
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error('Error checking service health:', error);
       throw error;

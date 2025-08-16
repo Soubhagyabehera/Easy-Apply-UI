@@ -8,7 +8,7 @@ export default function HomePage() {
       <div className="text-center py-16">
         <h1 className="text-4xl font-bold text-gray-900 sm:text-6xl">
           Find Your Dream Job with{' '}
-          <span className="text-primary-600">JobBot</span>
+          <span className="text-primary-600">Applyze</span>
         </h1>
         <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto">
           Discover thousands of job opportunities that match your skills and preferences. 
@@ -27,7 +27,7 @@ export default function HomePage() {
       {/* Features Section */}
       <div className="py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">Why Choose JobBot?</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Why Choose Applyze?</h2>
           <p className="mt-4 text-lg text-gray-600">
             Powered by AI to match you with the best opportunities
           </p>

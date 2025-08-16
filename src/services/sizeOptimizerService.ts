@@ -3,7 +3,7 @@
  * Handles file size optimization: image and PDF compression
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+import { apiClient } from '../config/api';
 
 export interface OptimizationResponse {
   success: boolean;
@@ -68,7 +68,7 @@ class SizeOptimizerService {
         formData.append('max_height', maxHeight.toString());
       }
 
-      const response = await fetch(`${API_BASE_URL}/size-optimizer/optimize-images`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/size-optimizer/optimize-images`, {
         method: 'POST',
         body: formData,
       });
@@ -98,7 +98,7 @@ class SizeOptimizerService {
       });
       formData.append('compression_level', compressionLevel);
 
-      const response = await fetch(`${API_BASE_URL}/size-optimizer/optimize-pdfs`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/size-optimizer/optimize-pdfs`, {
         method: 'POST',
         body: formData,
       });
@@ -119,7 +119,7 @@ class SizeOptimizerService {
    */
   async downloadFile(optimizationId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/size-optimizer/download/${optimizationId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/size-optimizer/download/${optimizationId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -137,7 +137,7 @@ class SizeOptimizerService {
    */
   async downloadBatch(batchId: string): Promise<Blob> {
     try {
-      const response = await fetch(`${API_BASE_URL}/size-optimizer/download-batch/${batchId}`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/size-optimizer/download-batch/${batchId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -158,7 +158,7 @@ class SizeOptimizerService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_BASE_URL}/size-optimizer/validate`, {
+      const response = await fetch(`${apiClient.defaults.baseURL}/size-optimizer/validate`, {
         method: 'POST',
         body: formData,
       });
@@ -175,7 +175,7 @@ class SizeOptimizerService {
    */
   async getInfo(): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/size-optimizer/info`);
+      const response = await fetch(`${apiClient.defaults.baseURL}/size-optimizer/info`);
       return await response.json();
     } catch (error) {
       console.error('Failed to get size optimizer info:', error);

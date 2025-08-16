@@ -1,36 +1,5 @@
-import axios from 'axios'
 import { User } from '../types/user'
-
-const API_BASE_URL = 'https://easy-apply-backend-production.up.railway.app/api/v1'
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
-// Add token to requests if available
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-// Handle token expiration
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
-      window.location.href = '/'
-    }
-    return Promise.reject(error)
-  }
-)
+import { apiClient, API_ENDPOINTS } from '../config/api'
 
 export interface AuthResponse {
   access_token: string
@@ -49,7 +18,7 @@ export interface GoogleTokenData {
 export const userService = {
   // Authentication methods
   async googleAuth(googleToken: GoogleTokenData): Promise<AuthResponse> {
-    const response = await api.post('/users/auth/google', googleToken)
+    const response = await apiClient.post(API_ENDPOINTS.users.auth.google, googleToken)
     const authData = response.data
     
     // Store token and user data
@@ -60,7 +29,7 @@ export const userService = {
   },
 
   async getCurrentUser(): Promise<User> {
-    const response = await api.get('/users/me')
+    const response = await apiClient.get(API_ENDPOINTS.users.me)
     return response.data
   },
 
@@ -79,7 +48,7 @@ export const userService = {
   },
 
   async updateCurrentUser(userData: { name?: string; picture?: string }): Promise<User> {
-    const response = await api.put('/users/me', userData)
+    const response = await apiClient.put(API_ENDPOINTS.users.me, userData)
     const updatedUser = response.data
     
     // Update stored user data
@@ -90,35 +59,35 @@ export const userService = {
 
   // User management methods
   async getAllUsers(): Promise<User[]> {
-    const response = await api.get('/users/')
+    const response = await apiClient.get(API_ENDPOINTS.users.base)
     return response.data
   },
 
   async getUserById(id: number): Promise<User> {
-    const response = await api.get(`/users/${id}`)
+    const response = await apiClient.get(API_ENDPOINTS.users.byId(id))
     return response.data
   },
 
   async createUser(user: Omit<User, 'id' | 'is_active'>): Promise<User> {
-    const response = await api.post('/users/', user)
+    const response = await apiClient.post(API_ENDPOINTS.users.base, user)
     return response.data
   },
 
   async updateUser(id: number, user: Partial<User>): Promise<User> {
-    const response = await api.put(`/users/${id}`, user)
+    const response = await apiClient.put(API_ENDPOINTS.users.byId(id), user)
     return response.data
   },
 
   // Document management methods (for Phase 2)
   async getUserDocuments(userId: number): Promise<any[]> {
-    const response = await api.get(`/users/${userId}/documents`)
+    const response = await apiClient.get(API_ENDPOINTS.users.documents(userId))
     return response.data
   },
 
   async uploadDocument(userId: number, file: File): Promise<any> {
     const formData = new FormData()
     formData.append('file', file)
-    const response = await api.post(`/users/${userId}/documents`, formData, {
+    const response = await apiClient.post(API_ENDPOINTS.users.documents(userId), formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -127,6 +96,6 @@ export const userService = {
   },
 
   async deleteDocument(userId: number, docId: number): Promise<void> {
-    await api.delete(`/users/${userId}/documents/${docId}`)
+    await apiClient.delete(API_ENDPOINTS.users.document(userId, docId))
   },
 }

@@ -180,84 +180,84 @@ export default function AutoApplyPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         {/* Preferences */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center space-x-3 mb-6">
-              <Settings className="h-6 w-6 text-gray-600" />
-              <h2 className="text-xl font-semibold text-gray-900">Auto Apply Preferences</h2>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
+              <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 flex-shrink-0" />
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Auto Apply Preferences</h2>
             </div>
 
             {/* Job Categories */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">
                 Preferred Job Categories
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {categories.map((category) => (
-                  <label key={category.id} className="flex items-center space-x-2">
+                  <label key={category.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                     <input
                       type="checkbox"
                       checked={preferences.categories.includes(category.id)}
                       onChange={() => handleCategoryChange(category.id)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-700">{category.name}</span>
+                    <span className="text-sm text-gray-700 truncate">{category.name}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Locations */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">
                 Preferred Locations
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {locations.map((location) => (
-                  <label key={location} className="flex items-center space-x-2">
+                  <label key={location} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                     <input
                       type="checkbox"
                       checked={preferences.locations.includes(location)}
                       onChange={() => handleLocationChange(location)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-700">{location}</span>
+                    <span className="text-sm text-gray-700 truncate">{location}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Job Types */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">
                 Job Types
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {jobTypes.map((type) => (
-                  <label key={type.id} className="flex items-center space-x-2">
+                  <label key={type.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                     <input
                       type="checkbox"
                       checked={preferences.jobType.includes(type.id)}
                       onChange={() => handleJobTypeChange(type.id)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-700">{type.name}</span>
+                    <span className="text-sm text-gray-700 truncate">{type.name}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Experience */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Experience Level
               </label>
               <select
                 value={preferences.experience}
                 onChange={(e) => setPreferences({...preferences, experience: e.target.value})}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Any Experience</option>
                 <option value="fresher">Fresher</option>
@@ -268,7 +268,7 @@ export default function AutoApplyPage() {
             </div>
 
             {/* Application Limits */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Maximum Applications Per Day
               </label>
@@ -278,70 +278,70 @@ export default function AutoApplyPage() {
                 max="50"
                 value={preferences.maxApplicationsPerDay}
                 onChange={(e) => setPreferences({...preferences, maxApplicationsPerDay: parseInt(e.target.value)})}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
             {/* Settings */}
-            <div className="space-y-4">
-              <label className="flex items-center space-x-3">
+            <div className="space-y-3 sm:space-y-4">
+              <label className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                 <input
                   type="checkbox"
                   checked={preferences.autoSubmit}
                   onChange={(e) => setPreferences({...preferences, autoSubmit: e.target.checked})}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-0.5 flex-shrink-0"
                 />
                 <span className="text-sm text-gray-700">Auto-submit applications (no manual review)</span>
               </label>
-              <label className="flex items-center space-x-3">
+              <label className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                 <input
                   type="checkbox"
                   checked={preferences.notifyOnApplication}
                   onChange={(e) => setPreferences({...preferences, notifyOnApplication: e.target.checked})}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-0.5 flex-shrink-0"
                 />
                 <span className="text-sm text-gray-700">Send notifications for each application</span>
               </label>
             </div>
 
-            <button className="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+            <button className="w-full mt-4 sm:mt-6 bg-blue-600 text-white py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm sm:text-base">
               Save Preferences
             </button>
           </div>
         </div>
 
         {/* Recent Applications */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Recent Auto Applications</h2>
-              <Bell className="h-5 w-5 text-gray-400" />
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Recent Auto Applications</h2>
+              <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0" />
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {recentApplications.map((application) => (
-                <div key={application.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{application.jobTitle}</h3>
-                      <p className="text-gray-600">{application.company}</p>
+                <div key={application.id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-2 sm:space-y-0 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{application.jobTitle}</h3>
+                      <p className="text-gray-600 text-sm truncate">{application.company}</p>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 flex-shrink-0">
                       {application.status === 'submitted' ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                       ) : (
-                        <Clock className="h-5 w-5 text-yellow-500" />
+                        <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
                       )}
-                      <span className={`text-sm font-medium ${
+                      <span className={`text-xs sm:text-sm font-medium ${
                         application.status === 'submitted' ? 'text-green-600' : 'text-yellow-600'
                       }`}>
                         {application.status === 'submitted' ? 'Submitted' : 'Pending'}
                       </span>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-xs sm:text-sm text-gray-500 space-y-1">
                     <p>Applied: {application.appliedAt}</p>
-                    <p>Application ID: {application.applicationId}</p>
+                    <p className="truncate">Application ID: {application.applicationId}</p>
                   </div>
                 </div>
               ))}
