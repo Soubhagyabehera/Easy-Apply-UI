@@ -2831,36 +2831,91 @@ export default function DocumentsPage() {
 
                   {/* Scanner Options */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <button 
-                      onClick={startCamera}
-                      className="p-6 border-2 border-orange-300 rounded-xl hover:bg-orange-50 text-center transition-colors"
-                    >
-                      <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
-                      <span className="font-semibold text-gray-900 block mb-2">Use Camera</span>
-                      <p className="text-sm text-gray-600">Scan documents using your device camera</p>
-                    </button>
-                    <div className="p-6 border-2 border-dashed border-orange-300 rounded-xl text-center bg-orange-50">
-                      <Upload className="h-12 w-12 text-orange-600 mx-auto mb-4" />
-                      <span className="font-semibold text-gray-900 block mb-2">Upload Images</span>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        className="hidden"
-                        id="scanner-upload"
-                        onChange={(e) => {
-                          if (e.target.files) {
-                            setUploadedFiles(Array.from(e.target.files))
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor="scanner-upload"
-                        className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer"
+                    {/* Camera Interface - Shows camera or button */}
+                    {showCamera ? (
+                      <div className="md:col-span-2 bg-gray-900 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-semibold text-white">Camera Capture</h4>
+                          <button
+                            onClick={stopCamera}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <video
+                            id="camera-video"
+                            autoPlay
+                            playsInline
+                            muted
+                            ref={(video) => {
+                              if (video && cameraStream) {
+                                video.srcObject = cameraStream;
+                                video.onloadedmetadata = () => {
+                                  console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
+                                  video.play().catch(e => console.log('Video play error:', e));
+                                };
+                                video.oncanplay = () => {
+                                  console.log('Video can play');
+                                };
+                              }
+                            }}
+                            className="w-full rounded-lg"
+                          />
+                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('🔴 Capture button clicked - starting capture process');
+                                await capturePhoto();
+                              }}
+                              className="bg-orange-600 text-white p-4 rounded-full hover:bg-orange-700 transition-colors shadow-lg border-2 border-white"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              <Camera className="h-6 w-6" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={startCamera}
+                        className="p-6 border-2 border-orange-300 rounded-xl hover:bg-orange-50 text-center transition-colors"
                       >
-                        Choose Images
-                      </label>
-                    </div>
+                        <Camera className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                        <span className="font-semibold text-gray-900 block mb-2">Use Camera</span>
+                        <p className="text-sm text-gray-600">Scan documents using your device camera</p>
+                      </button>
+                    )}
+                    
+                    {/* Upload Images - Only show when camera is not active */}
+                    {!showCamera && (
+                      <div className="p-6 border-2 border-dashed border-orange-300 rounded-xl text-center bg-orange-50">
+                        <Upload className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                        <span className="font-semibold text-gray-900 block mb-2">Upload Images</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          className="hidden"
+                          id="scanner-upload"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              setUploadedFiles(Array.from(e.target.files))
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="scanner-upload"
+                          className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer"
+                        >
+                          Choose Images
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   {/* Enhancement Options */}
@@ -2886,56 +2941,6 @@ export default function DocumentsPage() {
                     </div>
                   </div>
 
-                  {/* Camera Interface */}
-                  {showCamera && (
-                    <div className="bg-gray-900 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-semibold text-white">Camera Capture</h4>
-                        <button
-                          onClick={stopCamera}
-                          className="text-gray-400 hover:text-white"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <video
-                          id="camera-video"
-                          autoPlay
-                          playsInline
-                          muted
-                          ref={(video) => {
-                            if (video && cameraStream) {
-                              video.srcObject = cameraStream;
-                              video.onloadedmetadata = () => {
-                                console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
-                                video.play().catch(e => console.log('Video play error:', e));
-                              };
-                              video.oncanplay = () => {
-                                console.log('Video can play');
-                              };
-                            }
-                          }}
-                          className="w-full rounded-lg"
-                        />
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              console.log('🔴 Capture button clicked - starting capture process');
-                              await capturePhoto();
-                            }}
-                            className="bg-orange-600 text-white p-4 rounded-full hover:bg-orange-700 transition-colors shadow-lg border-2 border-white"
-                            style={{ pointerEvents: 'auto' }}
-                          >
-                            <Camera className="h-6 w-6" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Uploaded Files Preview */}
                   {uploadedFiles.length > 0 && !showCamera && (
