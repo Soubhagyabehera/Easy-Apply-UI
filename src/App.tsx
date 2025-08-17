@@ -81,6 +81,13 @@ function App() {
             <DocumentsPage />
           </Layout>
         } />
+        <Route path="/document-manager" element={
+          <ProtectedRoute>
+            <Layout>
+              <DocumentsPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </AuthProvider>
   )

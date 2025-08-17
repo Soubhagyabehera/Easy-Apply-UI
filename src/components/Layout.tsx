@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Building2, User, Home, FileText, 
-  Menu, X, Bell, Zap, Folder, ChevronDown, LogIn, UserPlus 
+  Menu, X, Bell, Zap, Folder, ChevronDown, LogIn, UserPlus, Settings, FolderOpen 
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -26,7 +26,8 @@ export default function Layout({ children }: LayoutProps) {
 
   const navigationItems = [
     { path: '/', label: 'Dashboard', icon: Home },
-    { path: '/documents', label: isAuthenticated ? 'Documents' : 'Document Tools', icon: Folder },
+    { path: '/documents?tab=tools', label: 'Doc Tools', icon: Settings },
+    { path: '/document-manager', label: 'Document Manager', icon: FolderOpen },
     { path: '/auto-apply', label: 'Auto Apply', icon: Zap },
     { path: '/applications', label: 'My Applications', icon: FileText },
   ]

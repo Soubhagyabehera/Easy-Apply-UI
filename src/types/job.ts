@@ -6,9 +6,16 @@ export interface DocumentRequirement {
   description?: string
 }
 
+export interface AgeLimit {
+  min?: number
+  max?: number
+  relaxations?: Record<string, number>
+}
+
 export interface EligibilityCriteria {
-  education_qualification?: string
-  age_limit?: string
+  education_qualification?: string[]
+  age_limit?: AgeLimit
+  experience_required?: string
   other_requirement?: string
 }
 
@@ -21,12 +28,23 @@ export interface Job {
   apply_link?: string
   posted_date?: string
   
-  // New comprehensive fields
+  // New comprehensive fields for government jobs
   vacancies?: number
-  fee?: number
+  category_wise_vacancies?: Record<string, number>
+  fee?: number  // Backward compatibility
+  fee_structure?: Record<string, number>
   job_description?: string
   eligibility_criteria?: EligibilityCriteria
   required_documents?: string[]
+  selection_process?: string[]
+  pay_scale?: string
+  application_mode?: 'online' | 'offline' | 'walk-in'
+  application_status?: 'open' | 'closed' | 'upcoming'
+  exam_date?: string
+  admit_card_release_date?: string
+  result_date?: string
+  official_notification_link?: string
+  official_website?: string
   application_deadline?: string
   contract_or_permanent?: 'contract' | 'permanent'
   job_type?: 'central' | 'state' | 'psu'

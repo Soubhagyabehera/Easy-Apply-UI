@@ -80,17 +80,38 @@ export const jobService = {
   },
 
   async getGovernmentJobs(filters?: {
+    // Main filters
     location?: string
-    organization?: string
+    qualification?: string
+    job_type?: string
+    employment_type?: string
+    // Advanced filters
     department?: string
+    salary?: string
+    age_limit?: string
+    application_status?: string
+    application_mode?: string
+    exam_date?: string
+    // Legacy filters
+    organization?: string
   }): Promise<Job[]> {
     const params = new URLSearchParams()
-    if (filters?.location) params.append('location', filters.location)
-    if (filters?.organization) params.append('organization', filters.organization)
-    if (filters?.department) params.append('department', filters.department)
     
-    // Updated to use the new jobs endpoint that returns consistent JSON format
-    const response = await apiClient.get(`${API_ENDPOINTS.jobs.base}/?${params.toString()}`)
+    // Add all filter parameters if they exist
+    if (filters?.location) params.append('location', filters.location)
+    if (filters?.qualification) params.append('qualification', filters.qualification)
+    if (filters?.job_type) params.append('job_type', filters.job_type)
+    if (filters?.employment_type) params.append('employment_type', filters.employment_type)
+    if (filters?.department) params.append('department', filters.department)
+    if (filters?.salary) params.append('salary', filters.salary)
+    if (filters?.age_limit) params.append('age_limit', filters.age_limit)
+    if (filters?.application_status) params.append('application_status', filters.application_status)
+    if (filters?.application_mode) params.append('application_mode', filters.application_mode)
+    if (filters?.exam_date) params.append('exam_date', filters.exam_date)
+    if (filters?.organization) params.append('company', filters.organization) // Map to backend field
+    
+    // Use advanced search endpoint for comprehensive filtering
+    const response = await apiClient.get(`${API_ENDPOINTS.jobs.search.advanced}?${params.toString()}`)
     
     // Handle the new response format: { status: "success", count: number, data: Job[] }
     if (response.data && response.data.status === 'success') {

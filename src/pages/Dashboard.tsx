@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, LogIn, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase, ChevronDown, ChevronUp, Zap, Shield, Sparkles, Camera } from 'lucide-react'
+import { Search, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase, ChevronDown, ChevronUp, Zap, Shield, Camera } from 'lucide-react'
 import { jobService } from '../services/jobService'
 import { Job, JobCategory } from '../types/job'
 import { useAuth } from '../contexts/AuthContext'
@@ -14,7 +14,10 @@ export default function Dashboard() {
     experience: '',
     salary: '',
     ageLimit: '',
-    qualification: ''
+    qualification: '',
+    applicationStatus: '',
+    applicationMode: '',
+    examDate: ''
   })
   
   const [governmentJobs, setGovernmentJobs] = useState<Job[]>([])
@@ -46,7 +49,7 @@ export default function Dashboard() {
     if (searchTerm.trim().length > 2) {
       const filtered = governmentJobs.filter(job => 
         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.company?.toLowerCase().includes(searchTerm.toLowerCase())
       ).slice(0, 5) // Limit to 5 suggestions
       setSearchSuggestions(filtered)
@@ -70,9 +73,18 @@ export default function Dashboard() {
       setLoading(true)
       setError(null)
       const jobs = await jobService.getGovernmentJobs({
+        // Main filters
         location: selectedFilters.location || undefined,
+        qualification: selectedFilters.qualification || undefined,
+        job_type: selectedFilters.jobType || undefined,
+        employment_type: selectedFilters.experience || undefined,
+        // Advanced filters
         department: selectedFilters.department || undefined,
-        organization: selectedFilters.department || undefined
+        salary: selectedFilters.salary || undefined,
+        age_limit: selectedFilters.ageLimit || undefined,
+        application_status: selectedFilters.applicationStatus || undefined,
+        application_mode: selectedFilters.applicationMode || undefined,
+        exam_date: selectedFilters.examDate || undefined
       })
       setGovernmentJobs(jobs)
     } catch (err) {
@@ -160,7 +172,7 @@ export default function Dashboard() {
     }
   ]
 
-  // Job status tabs with responsive names
+  // Job status tabs with responsive names - calculate from all jobs, not filtered
   const jobStatusTabs = [
     { 
       id: 'active', 
@@ -241,7 +253,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-3 max-w-4xl mx-auto">
             <button 
               onClick={() => {
                 const jobsSection = document.getElementById('jobs-section');
@@ -249,33 +261,33 @@ export default function Dashboard() {
                   jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }}
-              className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+              className="px-2 py-2 sm:px-4 sm:py-3 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Find Government Jobs</span>
               <span className="sm:hidden">Find Jobs</span>
             </button>
             <Link 
               to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
-              className="px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+              className="px-2 py-2 sm:px-4 sm:py-3 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
             >
-              <Camera className="h-4 w-4" />
+              <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Smart Document Tools</span>
               <span className="sm:hidden">Tools</span>
             </Link>
             <Link 
               to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
-              className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+              className="px-2 py-2 sm:px-4 sm:py-3 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
             >
-              <Shield className="h-4 w-4" />
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Secure Document Storage</span>
               <span className="sm:hidden">Storage</span>
             </Link>
             <Link 
               to={isAuthenticated ? '/auto-apply' : '/signin'}
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 min-h-[48px]"
+              className="px-2 py-2 sm:px-4 sm:py-3 bg-orange-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
             >
-              <Zap className="h-4 w-4" />
+              <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">One-Click Auto Apply</span>
               <span className="sm:hidden">Auto Apply</span>
             </Link>
@@ -287,153 +299,472 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">
-              <span className="text-blue-600">{filteredJobs.length}</span> Govt Jobs Available
-            </h2>
-          </div>
-          
-          {/* Status Tabs */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {jobStatusTabs.map((tab) => (
+        <div className="mb-4">
+          {/* Ultra-Compact Mobile Layout */}
+          <div className="block sm:hidden">
+            {/* Mobile: Innovative Status Tabs with Integrated Counts */}
+            <div className="flex gap-1 mb-2 px-1">
+              {jobStatusTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setJobStatus(tab.id as any)}
+                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all text-center ${
+                    jobStatus === tab.id
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="flex flex-col items-center">
+                    <span className={`text-lg font-bold ${jobStatus === tab.id ? 'text-white' : 'text-blue-600'}`}>
+                      {tab.count}
+                    </span>
+                    <span className="text-xs opacity-90">
+                      {tab.shortName.split(' ')[0]}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            {/* Mobile: Horizontal Scrollable Categories + Filter Button */}
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-1.5 pb-1">
+                  {jobCategories.slice(0, 6).map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        setSelectedCategory(selectedCategory === category.id ? null : category.id)
+                        setSearchTerm('')
+                      }}
+                      className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                        selectedCategory === category.id 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <span className="text-xs">{category.icon}</span>
+                      <span>{category.name}</span>
+                      <span className={`text-xs px-1 py-0.5 rounded-full ${
+                        selectedCategory === category.id 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-white text-gray-600'
+                      }`}>{category.jobCount}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
-                key={tab.id}
-                onClick={() => setJobStatus(tab.id as any)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  jobStatus === tab.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="flex-shrink-0 px-2 py-1 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition-colors flex items-center gap-1"
               >
-                <span className="hidden sm:inline">{tab.name}</span>
-                <span className="sm:hidden">{tab.shortName}</span>
-                <span className="ml-2 text-xs opacity-75">({tab.count})</span>
+                <span>Filter</span>
+                {showAdvancedFilters ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
               </button>
-            ))}
+            </div>
           </div>
-          {/* Main Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <select 
-              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
-              value={selectedFilters.jobType}
-              onChange={(e) => setSelectedFilters({...selectedFilters, jobType: e.target.value})}
-            >
-              <option value="">Job Type</option>
-              <option value="central">Central Government</option>
-              <option value="state">State Government</option>
-              <option value="psu">PSU</option>
-              <option value="autonomous">Autonomous Organization</option>
-            </select>
+
+          {/* Desktop Layout */}
+          <div className="hidden sm:block">
+            {/* Header with Job Count and Status Tabs in One Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h2 className="text-sm sm:text-base font-semibold text-gray-900">
+                <span className="text-blue-600">{filteredJobs.length}</span> Govt Jobs Available
+              </h2>
+              
+              {/* Compact Status Tabs */}
+              <div className="flex flex-wrap gap-1.5">
+                {jobStatusTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setJobStatus(tab.id as any)}
+                    className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      jobStatus === tab.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span className="hidden xs:inline sm:hidden md:inline">{tab.shortName}</span>
+                    <span className="xs:hidden sm:inline md:hidden">{tab.shortName.split(' ')[0]}</span>
+                    <span className="ml-1 text-xs font-medium opacity-75">({tab.count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             
-            <select 
-              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
-              value={selectedFilters.qualification}
-              onChange={(e) => setSelectedFilters({...selectedFilters, qualification: e.target.value})}
-            >
-              <option value="">Qualification</option>
-              <option value="graduate">Graduate</option>
-              <option value="post-graduate">Post Graduate</option>
-              <option value="12th">12th Pass</option>
-              <option value="10th">10th Pass</option>
-              <option value="diploma">Diploma</option>
-              <option value="phd">PhD</option>
-            </select>
-            
-            <select 
-              className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
-              value={selectedFilters.experience}
-              onChange={(e) => setSelectedFilters({...selectedFilters, experience: e.target.value})}
-            >
-              <option value="">Employment Type</option>
-              <option value="permanent">Permanent</option>
-              <option value="contract">Contract</option>
-              <option value="internship">Internship</option>
-              <option value="temporary">Temporary</option>
-            </select>
-            
-            <button
-              onClick={fetchGovernmentJobs}
-              disabled={loading}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-2"
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
-              <span>{loading ? 'Searching...' : 'Search'}</span>
-            </button>
-          </div>
-          
-          {/* Advanced Filters */}
-          <div className="mb-6">
-            <button
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
-            >
-              <span>Advanced Filters</span>
-              {showAdvancedFilters ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </button>
-            
-            {showAdvancedFilters && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3 p-4 bg-gray-50 rounded-lg">
+            {/* Compact Main Filters */}
+            <div className="bg-white rounded-lg border border-gray-200 p-2 sm:p-3 mb-3 shadow-sm">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 items-center">
                 <select 
-                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
                   value={selectedFilters.location}
                   onChange={(e) => setSelectedFilters({...selectedFilters, location: e.target.value})}
                 >
                   <option value="">Location</option>
+                  <option value="all-india">All India</option>
                   <option value="delhi">Delhi</option>
                   <option value="mumbai">Mumbai</option>
                   <option value="bangalore">Bangalore</option>
-                  <option value="pan-india">Pan India</option>
+                  <option value="chennai">Chennai</option>
+                  <option value="kolkata">Kolkata</option>
+                  <option value="hyderabad">Hyderabad</option>
+                  <option value="pune">Pune</option>
                 </select>
                 
                 <select 
-                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
-                  value={selectedFilters.department}
-                  onChange={(e) => setSelectedFilters({...selectedFilters, department: e.target.value})}
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  value={selectedFilters.qualification}
+                  onChange={(e) => setSelectedFilters({...selectedFilters, qualification: e.target.value})}
                 >
-                  <option value="">Organization</option>
-                  {uniqueOrganizations.slice(0, 8).map(org => (
-                    <option key={org} value={org}>{org}</option>
-                  ))}
+                  <option value="">Qualification</option>
+                  <option value="10th">10th Pass</option>
+                  <option value="12th">12th Pass</option>
+                  <option value="graduate">Graduate</option>
+                  <option value="post-graduate">Post Graduate</option>
+                  <option value="diploma">Diploma</option>
+                  <option value="iti">ITI</option>
                 </select>
                 
                 <select 
-                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
-                  value={selectedFilters.salary}
-                  onChange={(e) => setSelectedFilters({...selectedFilters, salary: e.target.value})}
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  value={selectedFilters.jobType}
+                  onChange={(e) => setSelectedFilters({...selectedFilters, jobType: e.target.value})}
                 >
-                  <option value="">Salary Range</option>
-                  <option value="0-25000">₹0 - ₹25,000</option>
-                  <option value="25000-50000">₹25,000 - ₹50,000</option>
-                  <option value="50000-100000">₹50,000 - ₹1,00,000</option>
-                  <option value="100000+">₹1,00,000+</option>
+                  <option value="">Job Type</option>
+                  <option value="central">Central Govt</option>
+                  <option value="state">State Govt</option>
+                  <option value="psu">PSU</option>
+                  <option value="autonomous">Autonomous</option>
                 </select>
                 
                 <select 
-                  className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
-                  value={selectedFilters.ageLimit}
-                  onChange={(e) => setSelectedFilters({...selectedFilters, ageLimit: e.target.value})}
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  value={selectedFilters.experience}
+                  onChange={(e) => setSelectedFilters({...selectedFilters, experience: e.target.value})}
                 >
-                  <option value="">Age Limit</option>
-                  <option value="18-25">18 - 25 years</option>
-                  <option value="18-30">18 - 30 years</option>
-                  <option value="18-35">18 - 35 years</option>
-                  <option value="no-limit">No Age Limit</option>
+                  <option value="">Employment</option>
+                  <option value="permanent">Permanent</option>
+                  <option value="contract">Contract</option>
+                  <option value="temporary">Temporary</option>
                 </select>
+                
+                {/* Advanced Filters Toggle */}
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors flex items-center justify-center space-x-1"
+                >
+                  <span>More</span>
+                  {showAdvancedFilters ? (
+                    <ChevronUp className="h-3 w-3" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3" />
+                  )}
+                </button>
+                
+                <button
+                  onClick={fetchGovernmentJobs}
+                  disabled={loading}
+                  className="w-full px-2 sm:px-3 py-2 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-1 col-span-1 xs:col-span-2 sm:col-span-3 lg:col-span-1"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  ) : (
+                    <Search className="h-3 w-3" />
+                  )}
+                  <span className="hidden xs:inline">{loading ? 'Searching...' : 'Search'}</span>
+                  <Search className="h-3 w-3 xs:hidden" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Active Filters Display */}
+          <div className="mb-3">
+            {Object.values(selectedFilters).some(filter => filter !== '') && (
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+                <span className="text-xs font-medium text-gray-600 flex items-center">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  <span className="hidden sm:inline">Active Filters:</span>
+                  <span className="sm:hidden">Filters:</span>
+                </span>
+                {selectedFilters.location && (
+                  <span className="inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="hidden xs:inline">📍 </span>
+                    {selectedFilters.location === 'all-india' ? 'All India' : selectedFilters.location.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    <button 
+                      onClick={() => setSelectedFilters({...selectedFilters, location: ''})}
+                      className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                    >
+                      <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedFilters.qualification && (
+                  <span className="inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="hidden xs:inline">🎓 </span>
+                    {selectedFilters.qualification}
+                    <button 
+                      onClick={() => setSelectedFilters({...selectedFilters, qualification: ''})}
+                      className="ml-1 hover:bg-green-200 rounded-full p-0.5"
+                    >
+                      <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedFilters.jobType && (
+                  <span className="inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    <span className="hidden xs:inline">💼 </span>
+                    {selectedFilters.jobType === 'central' ? 'Central' : selectedFilters.jobType === 'state' ? 'State' : selectedFilters.jobType === 'psu' ? 'PSU' : 'Autonomous'}
+                    <button 
+                      onClick={() => setSelectedFilters({...selectedFilters, jobType: ''})}
+                      className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
+                    >
+                      <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedFilters.experience && (
+                  <span className="inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    <span className="hidden xs:inline">🏛️ </span>
+                    {selectedFilters.experience}
+                    <button 
+                      onClick={() => setSelectedFilters({...selectedFilters, experience: ''})}
+                      className="ml-1 hover:bg-orange-200 rounded-full p-0.5"
+                    >
+                      <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    </button>
+                  </span>
+                )}
+                {(selectedFilters.department || selectedFilters.salary || selectedFilters.ageLimit || selectedFilters.applicationStatus || selectedFilters.applicationMode || selectedFilters.examDate) && (
+                  <span className="inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span className="hidden xs:inline">⚙️ </span>
+                    <span className="hidden sm:inline">Advanced filters</span>
+                    <span className="sm:hidden">More</span>
+                  </span>
+                )}
+                <button
+                  onClick={() => setSelectedFilters({
+                    location: '',
+                    department: '',
+                    jobType: '',
+                    experience: '',
+                    salary: '',
+                    ageLimit: '',
+                    qualification: '',
+                    applicationStatus: '',
+                    applicationMode: '',
+                    examDate: ''
+                  })}
+                  className="text-xs text-red-600 hover:text-red-800 font-medium flex items-center space-x-1"
+                >
+                  <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                  <span className="hidden sm:inline">Clear All</span>
+                  <span className="sm:hidden">Clear</span>
+                </button>
               </div>
             )}
           </div>
           
-          {/* Categories */}
-          <div className="flex flex-wrap gap-2">
+          {/* Advanced Filters - Mobile Modal Style */}
+          {showAdvancedFilters && (
+            <div className="block sm:hidden">
+              <div className="bg-white rounded-lg border border-gray-200 p-3 mb-2 shadow-sm">
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <select 
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={selectedFilters.location}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, location: e.target.value})}
+                  >
+                    <option value="">Location</option>
+                    <option value="all-india">All India</option>
+                    <optgroup label="States">
+                      <option value="andhra-pradesh">Andhra Pradesh</option>
+                      <option value="arunachal-pradesh">Arunachal Pradesh</option>
+                      <option value="assam">Assam</option>
+                      <option value="bihar">Bihar</option>
+                      <option value="chhattisgarh">Chhattisgarh</option>
+                      <option value="goa">Goa</option>
+                      <option value="gujarat">Gujarat</option>
+                      <option value="haryana">Haryana</option>
+                      <option value="himachal-pradesh">Himachal Pradesh</option>
+                      <option value="jharkhand">Jharkhand</option>
+                      <option value="karnataka">Karnataka</option>
+                      <option value="kerala">Kerala</option>
+                      <option value="madhya-pradesh">Madhya Pradesh</option>
+                      <option value="maharashtra">Maharashtra</option>
+                      <option value="manipur">Manipur</option>
+                      <option value="meghalaya">Meghalaya</option>
+                      <option value="mizoram">Mizoram</option>
+                      <option value="nagaland">Nagaland</option>
+                      <option value="odisha">Odisha</option>
+                      <option value="punjab">Punjab</option>
+                      <option value="rajasthan">Rajasthan</option>
+                      <option value="sikkim">Sikkim</option>
+                      <option value="tamil-nadu">Tamil Nadu</option>
+                      <option value="telangana">Telangana</option>
+                      <option value="tripura">Tripura</option>
+                      <option value="uttar-pradesh">Uttar Pradesh</option>
+                      <option value="uttarakhand">Uttarakhand</option>
+                      <option value="west-bengal">West Bengal</option>
+                    </optgroup>
+                    <optgroup label="Union Territories">
+                      <option value="andaman-nicobar">Andaman & Nicobar Islands</option>
+                      <option value="chandigarh">Chandigarh</option>
+                      <option value="dadra-nagar-haveli">Dadra & Nagar Haveli and Daman & Diu</option>
+                      <option value="delhi">Delhi</option>
+                      <option value="jammu-kashmir">Jammu & Kashmir</option>
+                      <option value="ladakh">Ladakh</option>
+                      <option value="lakshadweep">Lakshadweep</option>
+                      <option value="puducherry">Puducherry</option>
+                    </optgroup>
+                  </select>
+                  
+                  <select 
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={selectedFilters.qualification}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, qualification: e.target.value})}
+                  >
+                    <option value="">Qualification</option>
+                    <option value="10th">10th Pass</option>
+                    <option value="12th">12th Pass</option>
+                    <option value="graduate">Graduate</option>
+                    <option value="post-graduate">Post Graduate</option>
+                  </select>
+                  
+                  <select 
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={selectedFilters.jobType}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, jobType: e.target.value})}
+                  >
+                    <option value="">Job Type</option>
+                    <option value="central">Central</option>
+                    <option value="state">State</option>
+                    <option value="psu">PSU</option>
+                  </select>
+                  
+                  <select 
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={selectedFilters.experience}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, experience: e.target.value})}
+                  >
+                    <option value="">Employment</option>
+                    <option value="permanent">Permanent</option>
+                    <option value="contract">Contract</option>
+                  </select>
+                  
+                  <select 
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={selectedFilters.salary}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, salary: e.target.value})}
+                  >
+                    <option value="">Salary</option>
+                    <option value="0-25000">₹0-25K</option>
+                    <option value="25000-50000">₹25K-50K</option>
+                    <option value="50000-100000">₹50K-1L</option>
+                    <option value="100000+">₹1L+</option>
+                  </select>
+                  
+                  <select 
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={selectedFilters.ageLimit}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, ageLimit: e.target.value})}
+                  >
+                    <option value="">Age Limit</option>
+                    <option value="18-25">18-25</option>
+                    <option value="18-30">18-30</option>
+                    <option value="18-35">18-35</option>
+                    <option value="21-35">21-35</option>
+                  </select>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={fetchGovernmentJobs}
+                    disabled={loading}
+                    className="flex-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1"
+                  >
+                    {loading ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                    ) : (
+                      <Search className="h-3 w-3" />
+                    )}
+                    <span>Search</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedFilters({
+                      location: '',
+                      department: '',
+                      jobType: '',
+                      experience: '',
+                      salary: '',
+                      ageLimit: '',
+                      qualification: '',
+                      applicationStatus: '',
+                      applicationMode: '',
+                      examDate: ''
+                    })}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200 transition-colors flex items-center gap-1"
+                  >
+                    <X className="h-3 w-3" />
+                    <span>Clear</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Advanced Filters */}
+          <div className="hidden sm:block">
+            {showAdvancedFilters && (
+              <div className="bg-white rounded-lg border border-gray-200 p-2 sm:p-3 mb-3 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  <select 
+                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                    value={selectedFilters.department}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, department: e.target.value})}
+                  >
+                    <option value="">Organization</option>
+                    {uniqueOrganizations.slice(0, 8).map(org => org && (
+                      <option key={org} value={org}>{org.length > 20 ? org.substring(0, 20) + '...' : org}</option>
+                    ))}
+                  </select>
+                  
+                  <select 
+                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                    value={selectedFilters.salary}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, salary: e.target.value})}
+                  >
+                    <option value="">Salary Range</option>
+                    <option value="0-25000">₹0 - ₹25K</option>
+                    <option value="25000-50000">₹25K - ₹50K</option>
+                    <option value="50000-100000">₹50K - ₹1L</option>
+                    <option value="100000+">₹1L+</option>
+                  </select>
+                  
+                  <select 
+                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                    value={selectedFilters.ageLimit}
+                    onChange={(e) => setSelectedFilters({...selectedFilters, ageLimit: e.target.value})}
+                  >
+                    <option value="">Age Limit</option>
+                    <option value="18-25">18-25 years</option>
+                    <option value="18-30">18-30 years</option>
+                    <option value="18-35">18-35 years</option>
+                    <option value="21-35">21-35 years</option>
+                    <option value="no-limit">No Limit</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Categories - Desktop Only */}
+          <div className="hidden sm:flex flex-wrap gap-1.5 sm:gap-2">
             {jobCategories.map((category) => (
               <button
                 key={category.id}
@@ -441,15 +772,16 @@ export default function Dashboard() {
                   setSelectedCategory(selectedCategory === category.id ? null : category.id)
                   setSearchTerm('')
                 }}
-                className={`inline-flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`inline-flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-medium transition-all ${
                   selectedCategory === category.id 
                     ? 'bg-blue-600 text-white' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <span>{category.icon}</span>
-                <span>{category.name}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                <span className="text-xs">{category.icon}</span>
+                <span className="hidden xs:inline sm:inline">{category.name}</span>
+                <span className="xs:hidden sm:hidden">{category.name.substring(0, 3)}</span>
+                <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium ${
                   selectedCategory === category.id 
                     ? 'bg-blue-500 text-white' 
                     : 'bg-white text-gray-600'
@@ -509,12 +841,8 @@ export default function Dashboard() {
                             {job.apply_last_date || job.application_deadline || job.last_date || 'Check notification'}
                           </span>
                         </div>
-                        <div className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          job.job_type === 'contract' || job.employment_type === 'contract'
-                            ? 'bg-orange-100 text-orange-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {job.job_type === 'contract' || job.employment_type === 'contract' ? 'Contract' : 'Permanent'}
+                        <div className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                          Permanent
                         </div>
                       </div>
                       
@@ -666,8 +994,11 @@ export default function Dashboard() {
                     <div>
                       <p className="font-medium text-green-900">Educational Qualification</p>
                       <p className="text-green-700 text-sm">
-                        {selectedJob.eligibility_criteria?.education_qualification || 
-                         'Graduate degree from recognized university or equivalent qualification as specified in the notification.'}
+                        {selectedJob.eligibility_criteria?.education_qualification 
+                          ? (Array.isArray(selectedJob.eligibility_criteria.education_qualification)
+                              ? selectedJob.eligibility_criteria.education_qualification.join(', ')
+                              : selectedJob.eligibility_criteria.education_qualification)
+                          : 'Graduate degree from recognized university or equivalent qualification as specified in the notification.'}
                       </p>
                     </div>
                   </div>
@@ -676,8 +1007,11 @@ export default function Dashboard() {
                     <div>
                       <p className="font-medium text-green-900">Age Limit</p>
                       <p className="text-green-700 text-sm">
-                        {selectedJob.eligibility_criteria?.age_limit || 
-                         '18-30 years (relaxation as per government norms for reserved categories)'}
+                        {selectedJob.eligibility_criteria?.age_limit 
+                          ? (selectedJob.eligibility_criteria.age_limit.min && selectedJob.eligibility_criteria.age_limit.max
+                              ? `${selectedJob.eligibility_criteria.age_limit.min} - ${selectedJob.eligibility_criteria.age_limit.max} years`
+                              : '18-30 years (relaxation as per government norms for reserved categories)')
+                          : '18-30 years (relaxation as per government norms for reserved categories)'}
                       </p>
                     </div>
                   </div>
