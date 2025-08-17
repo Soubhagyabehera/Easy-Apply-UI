@@ -11,6 +11,7 @@ export interface Application {
   application_id?: string;
   exam_date?: string;
   interview_date?: string;
+  document_verification_date?: string;
   result_date?: string;
   application_fee?: string;
   documents?: string[];
@@ -30,6 +31,7 @@ export interface ApplicationCreate {
   application_id?: string;
   exam_date?: string;
   interview_date?: string;
+  document_verification_date?: string;
   result_date?: string;
   application_fee?: string;
   documents?: string[];
@@ -45,6 +47,7 @@ export interface ApplicationUpdate {
   application_id?: string;
   exam_date?: string;
   interview_date?: string;
+  document_verification_date?: string;
   result_date?: string;
   application_fee?: string;
   documents?: string[];

@@ -190,10 +190,23 @@ export default function ApplicationsPage() {
     }
   }
 
-  const updateApplicationStatus = async (id: string, status: Application['status'], notes?: string) => {
+  const updateApplicationStatus = async (id: string, status: Application['status'], notes?: string, dateFields?: {
+    exam_date?: string;
+    interview_date?: string;
+    document_verification_date?: string;
+    result_date?: string;
+  }) => {
     try {
       const updateData: ApplicationUpdate = { status }
       if (notes) updateData.notes = notes
+      
+      // Add date fields if provided, converting empty strings to undefined
+      if (dateFields) {
+        updateData.exam_date = dateFields.exam_date || undefined
+        updateData.interview_date = dateFields.interview_date || undefined
+        updateData.document_verification_date = dateFields.document_verification_date || undefined
+        updateData.result_date = dateFields.result_date || undefined
+      }
       
       const updatedApp = await applicationService.updateApplication(id, updateData)
       setApplications(apps => apps.map(app => app.id === id ? updatedApp : app))
@@ -217,42 +230,45 @@ export default function ApplicationsPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Inject custom date picker styles */}
       <style>{datePickerStyles}</style>
-      {/* Hero Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-              <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+      
+      {/* Container for consistent width */}
+      <div className="px-4 sm:px-6 lg:px-8">
+        {/* Hero Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Application Tracker</h1>
+                <p className="text-blue-100 text-sm sm:text-base lg:text-lg">Track and manage your government job applications</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Application Tracker</h1>
-              <p className="text-blue-100 text-sm sm:text-base lg:text-lg">Track and manage your government job applications</p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-white text-blue-600 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden xs:inline">Add Application</span>
+                <span className="xs:hidden">Add</span>
+              </button>
+              <button
+                onClick={loadApplications}
+                disabled={loading}
+                className="bg-white/20 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-white/30 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden xs:inline">Refresh</span>
+                <span className="xs:hidden">↻</span>
+              </button>
             </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-white text-blue-600 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden xs:inline">Add Application</span>
-              <span className="xs:hidden">Add</span>
-            </button>
-            <button
-              onClick={loadApplications}
-              disabled={loading}
-              className="bg-white/20 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-white/30 transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden xs:inline">Refresh</span>
-              <span className="xs:hidden">↻</span>
-            </button>
           </div>
         </div>
-      </div>
 
         {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div>
         
         {/* Overview Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -302,6 +318,250 @@ export default function ApplicationsPage() {
               </div>
               <div className="bg-red-100 p-2 sm:p-2.5 lg:p-3 rounded-lg sm:rounded-xl flex-shrink-0">
                 <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-red-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Important Dates Calendar */}
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:space-x-6 space-y-4 lg:space-y-0">
+            {/* Calendar Header */}
+            <div className="lg:w-1/3">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-xl">
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">Important Dates</h2>
+                  <p className="text-xs sm:text-sm text-gray-600">Upcoming exams & interviews</p>
+                </div>
+              </div>
+              
+              {/* Current Month Display */}
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                <div className="text-center">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                    {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h3>
+                  <p className="text-sm text-purple-600 font-medium">
+                    {(() => {
+                      const today = new Date();
+                      let monthEvents = 0;
+                      
+                      applications.forEach(app => {
+                        const checkDate = (dateStr) => {
+                          if (!dateStr) return false;
+                          const date = new Date(dateStr);
+                          return date >= today && date.getMonth() === today.getMonth();
+                        };
+                        
+                        if (checkDate(app.exam_date) || 
+                            checkDate(app.interview_date) || 
+                            checkDate(app.document_verification_date) || 
+                            checkDate(app.result_date)) {
+                          monthEvents++;
+                        }
+                      });
+                      
+                      return monthEvents;
+                    })()} events this month
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Events List */}
+            <div className="lg:w-2/3">
+              <div className="space-y-3">
+                {(() => {
+                  const upcomingEvents = [];
+                  const today = new Date();
+                  
+                  applications.forEach(app => {
+                    // Exam dates
+                    if (app.exam_date) {
+                      const examDate = new Date(app.exam_date);
+                      if (examDate >= today) {
+                        upcomingEvents.push({
+                          date: examDate,
+                          type: 'exam',
+                          title: `${app.job_title} - Exam`,
+                          company: app.company,
+                          icon: 'exam',
+                          color: 'blue'
+                        });
+                      }
+                    }
+                    
+                    // Interview dates
+                    if (app.interview_date) {
+                      const interviewDate = new Date(app.interview_date);
+                      if (interviewDate >= today) {
+                        upcomingEvents.push({
+                          date: interviewDate,
+                          type: 'interview',
+                          title: `${app.job_title} - Interview`,
+                          company: app.company,
+                          icon: 'interview',
+                          color: 'green'
+                        });
+                      }
+                    }
+                    
+                    // Document verification dates
+                    if (app.document_verification_date) {
+                      const docDate = new Date(app.document_verification_date);
+                      if (docDate >= today) {
+                        upcomingEvents.push({
+                          date: docDate,
+                          type: 'document',
+                          title: `${app.job_title} - Document Verification`,
+                          company: app.company,
+                          icon: 'document',
+                          color: 'purple'
+                        });
+                      }
+                    }
+                    
+                    // Result dates
+                    if (app.result_date) {
+                      const resultDate = new Date(app.result_date);
+                      if (resultDate >= today) {
+                        upcomingEvents.push({
+                          date: resultDate,
+                          type: 'result',
+                          title: `${app.job_title} - Result`,
+                          company: app.company,
+                          icon: 'result',
+                          color: 'orange'
+                        });
+                      }
+                    }
+                  });
+                  
+                  // Sort by date
+                  upcomingEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+                  
+                  if (upcomingEvents.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <div className="bg-gray-100 p-3 rounded-full w-12 h-12 mx-auto mb-3">
+                          <Calendar className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <p className="text-sm text-gray-600">No upcoming events</p>
+                        <p className="text-xs text-gray-500 mt-1">Add exam or interview dates to your applications</p>
+                      </div>
+                    );
+                  }
+                  
+                  return upcomingEvents.slice(0, 4).map((event, index) => {
+                    const isToday = event.date.toDateString() === today.toDateString();
+                    const isTomorrow = event.date.toDateString() === new Date(today.getTime() + 24 * 60 * 60 * 1000).toDateString();
+                    const daysUntil = Math.ceil((event.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    const getEventStyles = (color) => {
+                      switch (color) {
+                        case 'blue':
+                          return 'bg-blue-50 border-blue-200 hover:bg-blue-100';
+                        case 'green':
+                          return 'bg-green-50 border-green-200 hover:bg-green-100';
+                        case 'purple':
+                          return 'bg-purple-50 border-purple-200 hover:bg-purple-100';
+                        case 'orange':
+                          return 'bg-orange-50 border-orange-200 hover:bg-orange-100';
+                        default:
+                          return 'bg-gray-50 border-gray-200 hover:bg-gray-100';
+                      }
+                    };
+                    
+                    const getIconBgColor = (color) => {
+                      switch (color) {
+                        case 'blue': return 'bg-blue-500';
+                        case 'green': return 'bg-green-500';
+                        case 'purple': return 'bg-purple-500';
+                        case 'orange': return 'bg-orange-500';
+                        default: return 'bg-gray-500';
+                      }
+                    };
+                    
+                    const getEventIcon = (type) => {
+                      switch (type) {
+                        case 'exam':
+                          return <FileText className="h-4 w-4 text-white" />;
+                        case 'interview':
+                          return <Clock className="h-4 w-4 text-white" />;
+                        case 'document':
+                          return <CheckCircle className="h-4 w-4 text-white" />;
+                        case 'result':
+                          return <TrendingUp className="h-4 w-4 text-white" />;
+                        default:
+                          return <Calendar className="h-4 w-4 text-white" />;
+                      }
+                    };
+                    
+                    return (
+                      <div key={index} className={`flex items-center space-x-4 p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${getEventStyles(event.color)}`}>
+                        <div className={`p-2 rounded-lg ${getIconBgColor(event.color)}`}>
+                          {getEventIcon(event.type)}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-gray-900 truncate">{event.title}</h4>
+                          <p className="text-xs text-gray-600 truncate">{event.company}</p>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="text-xs font-medium text-gray-900">
+                            {event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                          <p className={`text-xs font-medium ${
+                            isToday ? 'text-red-600' : 
+                            isTomorrow ? 'text-orange-600' : 
+                            daysUntil <= 7 ? 'text-yellow-600' : 'text-gray-500'
+                          }`}>
+                            {isToday ? 'Today' : 
+                             isTomorrow ? 'Tomorrow' : 
+                             daysUntil <= 7 ? `${daysUntil} days` : 
+                             event.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+                
+                {/* Show More Button */}
+                {(() => {
+                  const today = new Date();
+                  let totalEvents = 0;
+                  
+                  applications.forEach(app => {
+                    const checkUpcomingDate = (dateStr) => {
+                      if (!dateStr) return false;
+                      const date = new Date(dateStr);
+                      return date >= today;
+                    };
+                    
+                    if (checkUpcomingDate(app.exam_date) || 
+                        checkUpcomingDate(app.interview_date) || 
+                        checkUpcomingDate(app.document_verification_date) || 
+                        checkUpcomingDate(app.result_date)) {
+                      totalEvents++;
+                    }
+                  });
+                  
+                  if (totalEvents > 4) {
+                    return (
+                      <div className="text-center pt-2">
+                        <button className="text-xs text-purple-600 hover:text-purple-700 font-medium">
+                          View all {totalEvents} upcoming events →
+                        </button>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
           </div>
@@ -420,6 +680,7 @@ export default function ApplicationsPage() {
                     </div>
                     
                     <div className="space-y-2 mb-3">
+                      {/* Applied Date and Fee */}
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center space-x-1 text-gray-600">
                           <Calendar className="h-3 w-3" />
@@ -430,13 +691,55 @@ export default function ApplicationsPage() {
                         )}
                       </div>
                       
-                      {application.exam_date && (
-                        <div className="flex items-center space-x-1 text-xs text-gray-600">
-                          <Clock className="h-3 w-3" />
-                          <span>Exam: {application.exam_date}</span>
-                        </div>
-                      )}
+                      {/* Last Status Event Date */}
+                      {(() => {
+                        const getLastStatusEventDate = (app) => {
+                          const dates = [];
+                          
+                          if (app.exam_date) dates.push({ date: app.exam_date, label: 'Exam', icon: FileText });
+                          if (app.interview_date) dates.push({ date: app.interview_date, label: 'Interview', icon: Clock });
+                          if (app.document_verification_date) dates.push({ date: app.document_verification_date, label: 'Doc Verification', icon: CheckCircle });
+                          if (app.result_date) dates.push({ date: app.result_date, label: 'Result', icon: TrendingUp });
+                          
+                          if (dates.length === 0) return null;
+                          
+                          // Sort by date and get the most recent
+                          dates.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                          return dates[0];
+                        };
+                        
+                        const lastEvent = getLastStatusEventDate(application);
+                        
+                        if (lastEvent) {
+                          const EventIcon = lastEvent.icon;
+                          const eventDate = new Date(lastEvent.date);
+                          const today = new Date();
+                          const isPast = eventDate < today;
+                          const isToday = eventDate.toDateString() === today.toDateString();
+                          const isFuture = eventDate > today;
+                          
+                          return (
+                            <div className="flex items-center space-x-1 text-xs">
+                              <EventIcon className={`h-3 w-3 ${
+                                isToday ? 'text-red-500' : 
+                                isFuture ? 'text-blue-500' : 
+                                'text-gray-500'
+                              }`} />
+                              <span className={`${
+                                isToday ? 'text-red-600 font-medium' : 
+                                isFuture ? 'text-blue-600' : 
+                                'text-gray-600'
+                              }`}>
+                                {lastEvent.label}: {lastEvent.date}
+                                {isToday && ' (Today)'}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                       
+                      {/* Department */}
                       {application.department && (
                         <div className="flex items-center space-x-1 text-xs text-gray-600">
                           <Building2 className="h-3 w-3" />
@@ -468,199 +771,437 @@ export default function ApplicationsPage() {
         </div>
       </div>
 
-      {/* Add Application Modal */}
+      {/* Add Application Modal - Redesigned */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-white rounded-xl sm:rounded-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-xl">
-            <div className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Add New Application</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
+            {/* Header with gradient background */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-6 rounded-t-2xl sm:rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white/20 p-2 rounded-xl">
+                    <Plus className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Add New Application</h2>
+                    <p className="text-blue-100 text-xs sm:text-sm">Track your government job application</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="text-white/80 hover:text-white hover:bg-white/20 transition-all duration-200 p-2 rounded-xl"
                 >
                   <XCircle className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
-              
-              <div className="space-y-3 sm:space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Job Title *</label>
-                    <input
-                      type="text"
-                      value={newApplication.job_title}
-                      onChange={(e) => setNewApplication({...newApplication, job_title: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="e.g., Software Engineer"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Company *</label>
-                    <input
-                      type="text"
-                      value={newApplication.company}
-                      onChange={(e) => setNewApplication({...newApplication, company: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="e.g., State Bank of India"
-                    />
-                  </div>
+            </div>
+
+            <div className="p-4 sm:p-6 lg:p-8">
+              {/* Progress indicator */}
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mb-2">
+                  <span>Complete all required fields</span>
+                  <span>{[newApplication.job_title, newApplication.company, newApplication.applied_date].filter(Boolean).length}/3 required</span>
                 </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Department</label>
-                    <select
-                      value={newApplication.department}
-                      onChange={(e) => setNewApplication({...newApplication, department: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
-                    >
-                      <option value="">Select Department</option>
-                      <option value="Banking">Banking</option>
-                      <option value="Railway">Railway</option>
-                      <option value="SSC">SSC</option>
-                      <option value="UPSC">UPSC</option>
-                      <option value="Police">Police</option>
-                      <option value="Defense">Defense</option>
-                      <option value="Teaching">Teaching</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Applied Date *</label>
-                    <input
-                      type="date"
-                      value={newApplication.applied_date}
-                      onChange={(e) => setNewApplication({...newApplication, applied_date: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Application ID</label>
-                    <input
-                      type="text"
-                      value={newApplication.application_id}
-                      onChange={(e) => setNewApplication({...newApplication, application_id: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="e.g., SBI2024001"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Application Fee</label>
-                    <input
-                      type="text"
-                      value={newApplication.application_fee}
-                      onChange={(e) => setNewApplication({...newApplication, application_fee: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="e.g., ₹750"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Notes</label>
-                  <textarea
-                    value={newApplication.notes}
-                    onChange={(e) => setNewApplication({...newApplication, notes: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-                    rows={3}
-                    placeholder="Any additional notes about this application..."
-                  />
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${([newApplication.job_title, newApplication.company, newApplication.applied_date].filter(Boolean).length / 3) * 100}%` }}
+                  ></div>
                 </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="w-full sm:w-auto px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addApplication}
-                  disabled={!newApplication.job_title || !newApplication.company || !newApplication.applied_date}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base font-medium"
-                >
-                  Add Application
-                </button>
+
+              {/* Form sections */}
+              <div className="space-y-6 sm:space-y-8">
+                {/* Essential Information */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 sm:p-6 border border-blue-100">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="bg-blue-500 p-1.5 rounded-lg">
+                      <Building2 className="h-4 w-4 text-white" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Essential Information</h3>
+                    <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Required</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        <span>Job Title *</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newApplication.job_title}
+                        onChange={(e) => setNewApplication({...newApplication, job_title: e.target.value})}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        placeholder="e.g., Software Engineer, Bank PO, SSC CGL"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                        <Building2 className="h-4 w-4 text-blue-500" />
+                        <span>Organization *</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newApplication.company}
+                        onChange={(e) => setNewApplication({...newApplication, company: e.target.value})}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        placeholder="e.g., State Bank of India, Indian Railways"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                        <Calendar className="h-4 w-4 text-blue-500" />
+                        <span>Applied Date *</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={newApplication.applied_date}
+                        onChange={(e) => setNewApplication({...newApplication, applied_date: e.target.value})}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                        <Target className="h-4 w-4 text-blue-500" />
+                        <span>Department</span>
+                      </label>
+                      <select
+                        value={newApplication.department}
+                        onChange={(e) => setNewApplication({...newApplication, department: e.target.value})}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      >
+                        <option value="">Select Department</option>
+                        <option value="Banking">🏦 Banking</option>
+                        <option value="Railway">🚂 Railway</option>
+                        <option value="SSC">📋 SSC</option>
+                        <option value="UPSC">🏛️ UPSC</option>
+                        <option value="Police">👮 Police</option>
+                        <option value="Defense">⚔️ Defense</option>
+                        <option value="Teaching">👨‍🏫 Teaching</option>
+                        <option value="Other">📁 Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Details */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 sm:p-6 border border-green-100">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="bg-green-500 p-1.5 rounded-lg">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Additional Details</h3>
+                    <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full font-medium">Optional</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                        <FileText className="h-4 w-4 text-green-500" />
+                        <span>Application ID</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newApplication.application_id}
+                        onChange={(e) => setNewApplication({...newApplication, application_id: e.target.value})}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white"
+                        placeholder="e.g., SBI2024001, RRB2024-456"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                        <span className="text-green-500">₹</span>
+                        <span>Application Fee</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newApplication.application_fee}
+                        onChange={(e) => setNewApplication({...newApplication, application_fee: e.target.value})}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white"
+                        placeholder="e.g., ₹750, ₹100"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 sm:mt-6 space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <Edit3 className="h-4 w-4 text-green-500" />
+                      <span>Notes</span>
+                    </label>
+                    <textarea
+                      value={newApplication.notes}
+                      onChange={(e) => setNewApplication({...newApplication, notes: e.target.value})}
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white resize-none"
+                      rows={3}
+                      placeholder="Any additional notes, exam dates, interview schedules, or important reminders..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4 mt-6 sm:mt-8 pt-6 border-t border-gray-200">
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>All data is stored securely</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm sm:text-base font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={addApplication}
+                    disabled={!newApplication.job_title || !newApplication.company || !newApplication.applied_date}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 text-sm sm:text-base font-medium shadow-lg hover:shadow-xl"
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <Plus className="h-4 w-4" />
+                      <span>Add Application</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Status Modal */}
+      {/* Edit Status Modal - Redesigned */}
       {editingApp && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-white rounded-xl sm:rounded-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-xl">
-            <div className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Update Status</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
+            {/* Header with gradient background */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 sm:p-6 rounded-t-2xl sm:rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white/20 p-2 rounded-xl">
+                    <Edit3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Update Status</h2>
+                    <p className="text-indigo-100 text-xs sm:text-sm">Track your application progress</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setEditingApp(null)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="text-white/80 hover:text-white hover:bg-white/20 transition-all duration-200 p-2 rounded-xl"
                 >
                   <XCircle className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
-              
-              <div className="space-y-3 sm:space-y-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-600 mb-3 p-3 bg-gray-50 rounded-lg font-medium">{editingApp.job_title} at {editingApp.company}</p>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Status</label>
-                  <select
-                    value={editingApp.status}
-                    onChange={(e) => setEditingApp({...editingApp, status: e.target.value as Application['status']})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
-                  >
-                    <option value="applied">Applied</option>
-                    <option value="document_verification">Document Verification</option>
-                    <option value="exam_scheduled">Exam Scheduled</option>
-                    <option value="exam_completed">Exam Completed</option>
-                    <option value="interview_scheduled">Interview Scheduled</option>
-                    <option value="interview_completed">Interview Completed</option>
-                    <option value="result_pending">Result Pending</option>
-                    <option value="selected">Selected</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
+            </div>
+
+            <div className="p-4 sm:p-6 lg:p-8">
+              {/* Application Info Card */}
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-4 sm:p-6 border border-indigo-100 mb-6 sm:mb-8">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="bg-indigo-500 p-2 rounded-xl">
+                    <Building2 className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">{editingApp.job_title}</h3>
+                    <p className="text-sm text-indigo-600 font-medium">{editingApp.company}</p>
+                  </div>
+                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    <Calendar className="h-4 w-4" />
+                    <span>Applied: {editingApp.applied_date}</span>
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Notes</label>
-                  <textarea
-                    value={editingApp.notes || ''}
-                    onChange={(e) => setEditingApp({...editingApp, notes: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-                    rows={3}
-                    placeholder="Update notes about this application..."
-                  />
+                {editingApp.department && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Target className="h-4 w-4 text-indigo-500" />
+                    <span>Department: {editingApp.department}</span>
+                  </div>
+                )}
+              </div>
+
+                {/* Status Update Section */}
+              <div className="space-y-6 sm:space-y-8">
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 sm:p-6 border border-blue-100">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="bg-blue-500 p-1.5 rounded-lg">
+                      <TrendingUp className="h-4 w-4 text-white" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Application Status</h3>
+                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">Update Progress</span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                        <CheckCircle className="h-4 w-4 text-blue-500" />
+                        <span>Current Status</span>
+                      </label>
+                      <select
+                        value={editingApp.status}
+                        onChange={(e) => setEditingApp({...editingApp, status: e.target.value as Application['status']})}
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                      >
+                        <option value="applied">📝 Applied</option>
+                        <option value="document_verification">📋 Document Verification</option>
+                        <option value="exam_scheduled">📅 Exam Scheduled</option>
+                        <option value="exam_completed">✅ Exam Completed</option>
+                        <option value="interview_scheduled">🗓️ Interview Scheduled</option>
+                        <option value="interview_completed">✅ Interview Completed</option>
+                        <option value="result_pending">⏳ Result Pending</option>
+                        <option value="selected">🎉 Selected</option>
+                        <option value="rejected">❌ Rejected</option>
+                      </select>
+                    </div>
+
+                    {/* Conditional Date Fields */}
+                    {(editingApp.status === 'exam_scheduled' || editingApp.status === 'exam_completed') && (
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                          <Calendar className="h-4 w-4 text-blue-500" />
+                          <span>Exam Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={editingApp.exam_date || ''}
+                          onChange={(e) => setEditingApp({...editingApp, exam_date: e.target.value})}
+                          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        />
+                      </div>
+                    )}
+
+                    {(editingApp.status === 'interview_scheduled' || editingApp.status === 'interview_completed') && (
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                          <Calendar className="h-4 w-4 text-blue-500" />
+                          <span>Interview Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={editingApp.interview_date || ''}
+                          onChange={(e) => setEditingApp({...editingApp, interview_date: e.target.value})}
+                          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        />
+                      </div>
+                    )}
+
+                    {editingApp.status === 'document_verification' && (
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                          <Calendar className="h-4 w-4 text-blue-500" />
+                          <span>Document Verification Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={editingApp.document_verification_date || ''}
+                          onChange={(e) => setEditingApp({...editingApp, document_verification_date: e.target.value})}
+                          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        />
+                      </div>
+                    )}
+
+                    {editingApp.status === 'result_pending' && (
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                          <Calendar className="h-4 w-4 text-blue-500" />
+                          <span>Expected Result Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={editingApp.result_date || ''}
+                          onChange={(e) => setEditingApp({...editingApp, result_date: e.target.value})}
+                          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        />
+                      </div>
+                    )}
+
+                    {(editingApp.status === 'selected' || editingApp.status === 'rejected') && (
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                          <Calendar className="h-4 w-4 text-blue-500" />
+                          <span>Result Announcement Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={editingApp.result_date || ''}
+                          onChange={(e) => setEditingApp({...editingApp, result_date: e.target.value})}
+                          className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes Section */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 sm:p-6 border border-green-100">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="bg-green-500 p-1.5 rounded-lg">
+                      <Edit3 className="h-4 w-4 text-white" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Additional Notes</h3>
+                    <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full font-medium">Optional</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                      <FileText className="h-4 w-4 text-green-500" />
+                      <span>Update Notes</span>
+                    </label>
+                    <textarea
+                      value={editingApp.notes || ''}
+                      onChange={(e) => setEditingApp({...editingApp, notes: e.target.value})}
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white resize-none"
+                      rows={4}
+                      placeholder="Add any updates, exam results, interview feedback, or important reminders..."
+                    />
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setEditingApp(null)}
-                  className="w-full sm:w-auto px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    updateApplicationStatus(editingApp.id, editingApp.status, editingApp.notes)
-                    setEditingApp(null)
-                  }}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base font-medium"
-                >
-                  Update Status
-                </button>
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4 mt-6 sm:mt-8 pt-6 border-t border-gray-200">
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
+                  <Clock className="h-4 w-4" />
+                  <span>Last updated: {new Date(editingApp.last_updated).toLocaleDateString()}</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+                  <button
+                    onClick={() => setEditingApp(null)}
+                    className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm sm:text-base font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateApplicationStatus(editingApp.id, editingApp.status, editingApp.notes, {
+                        exam_date: editingApp.exam_date,
+                        interview_date: editingApp.interview_date,
+                        document_verification_date: editingApp.document_verification_date,
+                        result_date: editingApp.result_date
+                      })
+                      setEditingApp(null)
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 text-sm sm:text-base font-medium shadow-lg hover:shadow-xl"
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Update Status</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
