@@ -206,9 +206,9 @@ export default function Dashboard() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6">
           {/* Search Bar */}
-          <div className="mb-6">
+          <div className="mb-3 sm:mb-6">
             <div className="relative max-w-4xl mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -253,44 +253,90 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-3 max-w-4xl mx-auto">
-            <button 
-              onClick={() => {
-                const jobsSection = document.getElementById('jobs-section');
-                if (jobsSection) {
-                  jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-              className="px-2 py-2 sm:px-4 sm:py-3 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
-            >
-              <Search className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Find Government Jobs</span>
-              <span className="sm:hidden">Find Jobs</span>
-            </button>
-            <Link 
-              to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
-              className="px-2 py-2 sm:px-4 sm:py-3 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
-            >
-              <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Smart Document Tools</span>
-              <span className="sm:hidden">Tools</span>
-            </Link>
-            <Link 
-              to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
-              className="px-2 py-2 sm:px-4 sm:py-3 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
-            >
-              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Secure Document Storage</span>
-              <span className="sm:hidden">Storage</span>
-            </Link>
-            <Link 
-              to={isAuthenticated ? '/auto-apply' : '/signin'}
-              className="px-2 py-2 sm:px-4 sm:py-3 bg-orange-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-1 sm:space-x-2"
-            >
-              <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">One-Click Auto Apply</span>
-              <span className="sm:hidden">Auto Apply</span>
-            </Link>
+          {/* Compact Mobile-First Action Buttons */}
+          <div className="max-w-4xl mx-auto">
+            {/* Mobile: Ultra-Compact Stacked Layout */}
+            <div className="block sm:hidden">
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-2 shadow-sm border border-white/60">
+                {/* Primary Find Jobs Button */}
+                <button 
+                  onClick={() => {
+                    const jobsSection = document.getElementById('jobs-section');
+                    if (jobsSection) {
+                      jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                  className="w-full mb-1.5 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm active:scale-98 transition-transform"
+                >
+                  <Search className="h-4 w-4" />
+                  <span>Find Jobs</span>
+                </button>
+                
+                {/* Secondary Action Row */}
+                <div className="grid grid-cols-3 gap-1">
+                  <Link 
+                    to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
+                    className="bg-green-600 hover:bg-green-700 rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                  >
+                    <Camera className="h-3.5 w-3.5 text-white" />
+                    <span className="text-xs font-medium text-white">Tools</span>
+                  </Link>
+                  
+                  <Link 
+                    to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
+                    className="bg-purple-600 hover:bg-purple-700 rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                  >
+                    <Shield className="h-3.5 w-3.5 text-white" />
+                    <span className="text-xs font-medium text-white">Storage</span>
+                  </Link>
+                  
+                  <Link 
+                    to={isAuthenticated ? '/auto-apply' : '/signin'}
+                    className="bg-orange-500 hover:bg-orange-600 rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                  >
+                    <Zap className="h-3.5 w-3.5 text-white" />
+                    <span className="text-xs font-medium text-white">Auto Apply</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop: Traditional Layout */}
+            <div className="hidden sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-3">
+              <button 
+                onClick={() => {
+                  const jobsSection = document.getElementById('jobs-section');
+                  if (jobsSection) {
+                    jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Search className="h-4 w-4" />
+                <span>Find Government Jobs</span>
+              </button>
+              <Link 
+                to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
+                className="px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Camera className="h-4 w-4" />
+                <span>Smart Document Tools</span>
+              </Link>
+              <Link 
+                to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
+                className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Shield className="h-4 w-4" />
+                <span>Secure Document Storage</span>
+              </Link>
+              <Link 
+                to={isAuthenticated ? '/auto-apply' : '/signin'}
+                className="px-4 py-3 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Zap className="h-4 w-4" />
+                <span>One-Click Auto Apply</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
