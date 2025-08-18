@@ -98,7 +98,7 @@ export default function Dashboard() {
   
   // Helper function to check if job deadline has passed
   const isJobExpired = (job: Job) => {
-    const deadline = job.apply_last_date || job.application_deadline || job.last_date
+    const deadline = job.application_deadline || job.last_date
     if (!deadline) return false
     
     try {
