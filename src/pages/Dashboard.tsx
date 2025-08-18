@@ -19,6 +19,7 @@ export default function Dashboard() {
     applicationMode: '',
     examDate: ''
   })
+  const [sortBy, setSortBy] = useState<'deadline' | 'vacancy' | 'recent' | 'default'>('default')
   
   const [governmentJobs, setGovernmentJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
@@ -95,27 +96,75 @@ export default function Dashboard() {
     }
   }
   
-  // Filter jobs based on search term, category, and status
-  const filteredJobs = governmentJobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.department?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Helper function to check if job deadline has passed
+  const isJobExpired = (job: Job) => {
+    const deadline = job.apply_last_date || job.application_deadline || job.last_date
+    if (!deadline) return false
     
-    const matchesCategory = !selectedCategory || 
-      (selectedCategory === 'banking' && (job.organization?.toLowerCase().includes('bank') || job.organization?.toLowerCase().includes('sbi') || job.organization?.toLowerCase().includes('rbi'))) ||
-      (selectedCategory === 'railway' && (job.organization?.toLowerCase().includes('railway') || job.organization?.toLowerCase().includes('metro'))) ||
-      (selectedCategory === 'ssc' && (job.organization?.toLowerCase().includes('ssc') || job.organization?.toLowerCase().includes('staff selection'))) ||
-      (selectedCategory === 'upsc' && (job.organization?.toLowerCase().includes('upsc') || job.organization?.toLowerCase().includes('civil'))) ||
-      (selectedCategory === 'defense' && (job.organization?.toLowerCase().includes('army') || job.organization?.toLowerCase().includes('navy') || job.organization?.toLowerCase().includes('air force')))
-    
-    // Mock job status filtering (in real app, this would come from backend)
-    const matchesStatus = jobStatus === 'all' || 
-      (jobStatus === 'active' && (!job.status || job.status === 'active')) ||
-      (jobStatus === 'admit-card' && job.status === 'admit-card') ||
-      (jobStatus === 'results' && job.status === 'results')
-    
-    return matchesSearch && matchesCategory && matchesStatus
-  })
+    try {
+      const deadlineDate = new Date(deadline)
+      const today = new Date()
+      today.setHours(23, 59, 59, 999) // Set to end of today
+      return deadlineDate.getTime() < today.getTime()
+    } catch {
+      return false
+    }
+  }
+
+  // Filter and sort jobs based on search term, category, status, and sort option
+  const filteredAndSortedJobs = (() => {
+    // First filter jobs
+    const filtered = governmentJobs.filter(job => {
+      const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.department?.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesCategory = !selectedCategory || 
+        (selectedCategory === 'banking' && (job.organization?.toLowerCase().includes('bank') || job.organization?.toLowerCase().includes('sbi') || job.organization?.toLowerCase().includes('rbi'))) ||
+        (selectedCategory === 'railway' && (job.organization?.toLowerCase().includes('railway') || job.organization?.toLowerCase().includes('metro'))) ||
+        (selectedCategory === 'ssc' && (job.organization?.toLowerCase().includes('ssc') || job.organization?.toLowerCase().includes('staff selection'))) ||
+        (selectedCategory === 'upsc' && (job.organization?.toLowerCase().includes('upsc') || job.organization?.toLowerCase().includes('civil'))) ||
+        (selectedCategory === 'defense' && (job.organization?.toLowerCase().includes('army') || job.organization?.toLowerCase().includes('navy') || job.organization?.toLowerCase().includes('air force')))
+      
+      // Enhanced job status filtering with deadline check
+      const matchesStatus = jobStatus === 'all' || 
+        (jobStatus === 'active' && (!job.status || job.status === 'active') && !isJobExpired(job)) ||
+        (jobStatus === 'admit-card' && job.status === 'admit-card') ||
+        (jobStatus === 'results' && job.status === 'results')
+      
+      return matchesSearch && matchesCategory && matchesStatus
+    })
+
+    // Then sort the filtered jobs
+    if (sortBy === 'default') {
+      return filtered
+    }
+
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'deadline':
+          // Sort by application deadline (earliest first)
+          const dateA = new Date(a.apply_last_date || a.application_deadline || a.last_date || '9999-12-31')
+          const dateB = new Date(b.apply_last_date || b.application_deadline || b.last_date || '9999-12-31')
+          return dateA.getTime() - dateB.getTime()
+        
+        case 'vacancy':
+          // Sort by number of vacancies (highest first)
+          const vacancyA = parseInt(a.vacancies?.toString().replace(/\D/g, '') || '0') || 0
+          const vacancyB = parseInt(b.vacancies?.toString().replace(/\D/g, '') || '0') || 0
+          return vacancyB - vacancyA
+        
+        case 'recent':
+          // Sort by posted date (most recent first)
+          const postedA = new Date(a.posted_date || a.created_at || '1970-01-01')
+          const postedB = new Date(b.posted_date || b.created_at || '1970-01-01')
+          return postedB.getTime() - postedA.getTime()
+        
+        default:
+          return 0
+      }
+    })
+  })()
   
   // Get unique organizations for filter options
   const uniqueOrganizations = [...new Set(governmentJobs.map(job => job.organization).filter(Boolean))]
@@ -203,13 +252,13 @@ export default function Dashboard() {
   // Stats removed - not currently used in the UI
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-700 border-b border-blue-100 dark:border-gray-600 transition-colors">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
           {/* Search Bar */}
-          <div className="mb-3 sm:mb-6">
-            <div className="relative max-w-4xl mx-auto">
+          <div className="mb-3 sm:mb-4">
+            <div className="relative max-w-3xl mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -218,22 +267,22 @@ export default function Dashboard() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => searchTerm.trim().length > 2 && setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="w-full pl-10 pr-4 py-2 text-sm border-2 border-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-md hover:shadow-lg transition-all"
+                className="w-full pl-10 pr-4 py-2 text-sm border-2 border-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white shadow-md hover:shadow-lg transition-all"
               />
               
               {/* Search Suggestions Dropdown */}
               {showSuggestions && searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg mt-1 z-50 max-h-80 overflow-y-auto">
                   {searchSuggestions.map((job, index) => (
                     <div
                       key={`${job.title}-${index}`}
                       onClick={() => handleSuggestionClick(job)}
-                      className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="text-sm font-medium text-gray-900 mb-1">{job.title}</h4>
-                          <p className="text-xs text-gray-600 mb-1">{job.organization || job.company}</p>
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">{job.title}</h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">{job.organization || job.company}</p>
                           <div className="flex items-center space-x-2 text-xs text-gray-500">
                             <span>{job.location}</span>
                             {job.apply_last_date && (
@@ -254,10 +303,10 @@ export default function Dashboard() {
           </div>
 
           {/* Compact Mobile-First Action Buttons */}
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full">
             {/* Mobile: Ultra-Compact Stacked Layout */}
             <div className="block sm:hidden">
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-2 shadow-sm border border-white/60">
+              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/60 dark:border-gray-600/60">
                 {/* Primary Find Jobs Button */}
                 <button 
                   onClick={() => {
@@ -276,7 +325,10 @@ export default function Dashboard() {
                 <div className="grid grid-cols-3 gap-1">
                   <Link 
                     to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
-                    className="bg-green-600 hover:bg-green-700 rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    className="rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    style={{backgroundColor: '#16A34A'}}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803D'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16A34A'}
                   >
                     <Camera className="h-3.5 w-3.5 text-white" />
                     <span className="text-xs font-medium text-white">Tools</span>
@@ -284,7 +336,10 @@ export default function Dashboard() {
                   
                   <Link 
                     to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
-                    className="bg-purple-600 hover:bg-purple-700 rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    className="rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    style={{backgroundColor: '#9333EA'}}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7C3AED'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#9333EA'}
                   >
                     <Shield className="h-3.5 w-3.5 text-white" />
                     <span className="text-xs font-medium text-white">Storage</span>
@@ -317,21 +372,27 @@ export default function Dashboard() {
               </button>
               <Link 
                 to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
-                className="px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                className="px-4 py-3 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                style={{backgroundColor: '#16A34A'}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803D'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16A34A'}
               >
                 <Camera className="h-4 w-4" />
                 <span>Smart Document Tools</span>
               </Link>
               <Link 
                 to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
-                className="px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                className="px-4 py-3 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                style={{backgroundColor: '#9333EA'}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7C3AED'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#9333EA'}
               >
                 <Shield className="h-4 w-4" />
                 <span>Secure Document Storage</span>
               </Link>
               <Link 
                 to={isAuthenticated ? '/auto-apply' : '/signin'}
-                className="px-4 py-3 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+                className="px-4 py-3 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
               >
                 <Zap className="h-4 w-4" />
                 <span>One-Click Auto Apply</span>
@@ -342,26 +403,26 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-3 sm:px-2 lg:px-3 py-2 sm:py-4">
 
         {/* Search and Filters */}
         <div className="mb-4">
           {/* Ultra-Compact Mobile Layout */}
           <div className="block sm:hidden">
-            {/* Mobile: Innovative Status Tabs with Integrated Counts */}
+            {/* Mobile: Compact Status Tabs */}
             <div className="flex gap-1 mb-2 px-1">
               {jobStatusTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setJobStatus(tab.id as any)}
-                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all text-center ${
+                  className={`flex-1 px-1.5 py-1 rounded-md text-xs font-medium transition-all text-center ${
                     jobStatus === tab.id
                       ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   <div className="flex flex-col items-center">
-                    <span className={`text-lg font-bold ${jobStatus === tab.id ? 'text-white' : 'text-blue-600'}`}>
+                    <span className={`text-sm font-bold ${jobStatus === tab.id ? 'text-white' : 'text-blue-600'}`}>
                       {tab.count}
                     </span>
                     <span className="text-xs opacity-90">
@@ -372,45 +433,60 @@ export default function Dashboard() {
               ))}
             </div>
             
-            {/* Mobile: Horizontal Scrollable Categories + Filter Button */}
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex-1 overflow-x-auto scrollbar-hide">
-                <div className="flex gap-1.5 pb-1">
-                  {jobCategories.slice(0, 6).map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => {
-                        setSelectedCategory(selectedCategory === category.id ? null : category.id)
-                        setSearchTerm('')
-                      }}
-                      className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                        selectedCategory === category.id 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      <span className="text-xs">{category.icon}</span>
-                      <span>{category.name}</span>
-                      <span className={`text-xs px-1 py-0.5 rounded-full ${
-                        selectedCategory === category.id 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white text-gray-600'
-                      }`}>{category.jobCount}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="flex-shrink-0 px-2 py-1 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition-colors flex items-center gap-1"
+            {/* Mobile: Sort + Categories + Filter Button */}
+            <div className="space-y-2 mb-2">
+              {/* Sort Dropdown for Mobile */}
+              <select 
+                className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'deadline' | 'vacancy' | 'recent' | 'default')}
               >
-                <span>Filter</span>
-                {showAdvancedFilters ? (
-                  <ChevronUp className="h-3 w-3" />
-                ) : (
-                  <ChevronDown className="h-3 w-3" />
-                )}
-              </button>
+                <option value="default">🔄 Sort By</option>
+                <option value="deadline">⏰ Deadline (Earliest First)</option>
+                <option value="vacancy">👥 Vacancy (Highest First)</option>
+                <option value="recent">📅 Recently Posted</option>
+              </select>
+              
+              {/* Categories + Filter Button */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-1.5 pb-1">
+                    {jobCategories.slice(0, 6).map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          setSelectedCategory(selectedCategory === category.id ? null : category.id)
+                          setSearchTerm('')
+                        }}
+                        className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                          selectedCategory === category.id 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        <span className="text-xs">{category.icon}</span>
+                        <span>{category.name}</span>
+                        <span className={`text-xs px-1 py-0.5 rounded-full ${
+                          selectedCategory === category.id 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-white text-gray-600'
+                        }`}>{category.jobCount}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="flex-shrink-0 px-2 py-1 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition-colors flex items-center gap-1"
+                >
+                  <span>Filter</span>
+                  {showAdvancedFilters ? (
+                    <ChevronUp className="h-3 w-3" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -418,8 +494,8 @@ export default function Dashboard() {
           <div className="hidden sm:block">
             {/* Header with Job Count and Status Tabs in One Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="text-sm sm:text-base font-semibold text-gray-900">
-                <span className="text-blue-600">{filteredJobs.length}</span> Govt Jobs Available
+              <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                <span className="text-blue-600">{filteredAndSortedJobs.length}</span> Govt Jobs Available
               </h2>
               
               {/* Compact Status Tabs */}
@@ -431,7 +507,7 @@ export default function Dashboard() {
                     className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       jobStatus === tab.id
                         ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     <span className="hidden xs:inline sm:hidden md:inline">{tab.shortName}</span>
@@ -443,26 +519,59 @@ export default function Dashboard() {
             </div>
             
             {/* Compact Main Filters */}
-            <div className="bg-white rounded-lg border border-gray-200 p-2 sm:p-3 mb-3 shadow-sm">
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 items-center">
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600 p-2 sm:p-3 mb-3 shadow-sm">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 items-center">
                 <select 
-                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
                   value={selectedFilters.location}
                   onChange={(e) => setSelectedFilters({...selectedFilters, location: e.target.value})}
                 >
                   <option value="">Location</option>
-                  <option value="all-india">All India</option>
-                  <option value="delhi">Delhi</option>
-                  <option value="mumbai">Mumbai</option>
-                  <option value="bangalore">Bangalore</option>
-                  <option value="chennai">Chennai</option>
-                  <option value="kolkata">Kolkata</option>
-                  <option value="hyderabad">Hyderabad</option>
-                  <option value="pune">Pune</option>
+                    <option value="all-india">All India</option>
+                    <optgroup label="States">
+                      <option value="andhra-pradesh">Andhra Pradesh</option>
+                      <option value="arunachal-pradesh">Arunachal Pradesh</option>
+                      <option value="assam">Assam</option>
+                      <option value="bihar">Bihar</option>
+                      <option value="chhattisgarh">Chhattisgarh</option>
+                      <option value="goa">Goa</option>
+                      <option value="gujarat">Gujarat</option>
+                      <option value="haryana">Haryana</option>
+                      <option value="himachal-pradesh">Himachal Pradesh</option>
+                      <option value="jharkhand">Jharkhand</option>
+                      <option value="karnataka">Karnataka</option>
+                      <option value="kerala">Kerala</option>
+                      <option value="madhya-pradesh">Madhya Pradesh</option>
+                      <option value="maharashtra">Maharashtra</option>
+                      <option value="manipur">Manipur</option>
+                      <option value="meghalaya">Meghalaya</option>
+                      <option value="mizoram">Mizoram</option>
+                      <option value="nagaland">Nagaland</option>
+                      <option value="odisha">Odisha</option>
+                      <option value="punjab">Punjab</option>
+                      <option value="rajasthan">Rajasthan</option>
+                      <option value="sikkim">Sikkim</option>
+                      <option value="tamil-nadu">Tamil Nadu</option>
+                      <option value="telangana">Telangana</option>
+                      <option value="tripura">Tripura</option>
+                      <option value="uttar-pradesh">Uttar Pradesh</option>
+                      <option value="uttarakhand">Uttarakhand</option>
+                      <option value="west-bengal">West Bengal</option>
+                    </optgroup>
+                    <optgroup label="Union Territories">
+                      <option value="andaman-nicobar">Andaman & Nicobar Islands</option>
+                      <option value="chandigarh">Chandigarh</option>
+                      <option value="dadra-nagar-haveli">Dadra & Nagar Haveli and Daman & Diu</option>
+                      <option value="delhi">Delhi</option>
+                      <option value="jammu-kashmir">Jammu & Kashmir</option>
+                      <option value="ladakh">Ladakh</option>
+                      <option value="lakshadweep">Lakshadweep</option>
+                      <option value="puducherry">Puducherry</option>
+                    </optgroup>
                 </select>
                 
                 <select 
-                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
                   value={selectedFilters.qualification}
                   onChange={(e) => setSelectedFilters({...selectedFilters, qualification: e.target.value})}
                 >
@@ -476,7 +585,7 @@ export default function Dashboard() {
                 </select>
                 
                 <select 
-                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
                   value={selectedFilters.jobType}
                   onChange={(e) => setSelectedFilters({...selectedFilters, jobType: e.target.value})}
                 >
@@ -488,7 +597,7 @@ export default function Dashboard() {
                 </select>
                 
                 <select 
-                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
                   value={selectedFilters.experience}
                   onChange={(e) => setSelectedFilters({...selectedFilters, experience: e.target.value})}
                 >
@@ -496,6 +605,18 @@ export default function Dashboard() {
                   <option value="permanent">Permanent</option>
                   <option value="contract">Contract</option>
                   <option value="temporary">Temporary</option>
+                </select>
+                
+                {/* Sort By Dropdown */}
+                <select 
+                  className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'deadline' | 'vacancy' | 'recent' | 'default')}
+                >
+                  <option value="default">Sort By</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="vacancy">Vacancy</option>
+                  <option value="recent">Recently Posted</option>
                 </select>
                 
                 {/* Advanced Filters Toggle */}
@@ -618,7 +739,7 @@ export default function Dashboard() {
           {/* Advanced Filters - Mobile Modal Style */}
           {showAdvancedFilters && (
             <div className="block sm:hidden">
-              <div className="bg-white rounded-lg border border-gray-200 p-3 mb-2 shadow-sm">
+              <div className="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600 p-3 mb-2 shadow-sm">
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <select 
                     className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
@@ -767,10 +888,10 @@ export default function Dashboard() {
           {/* Desktop Advanced Filters */}
           <div className="hidden sm:block">
             {showAdvancedFilters && (
-              <div className="bg-white rounded-lg border border-gray-200 p-2 sm:p-3 mb-3 shadow-sm">
+              <div className="bg-white dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600 p-2 sm:p-3 mb-3 shadow-sm">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   <select 
-                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
                     value={selectedFilters.department}
                     onChange={(e) => setSelectedFilters({...selectedFilters, department: e.target.value})}
                   >
@@ -781,7 +902,7 @@ export default function Dashboard() {
                   </select>
                   
                   <select 
-                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
                     value={selectedFilters.salary}
                     onChange={(e) => setSelectedFilters({...selectedFilters, salary: e.target.value})}
                   >
@@ -793,7 +914,7 @@ export default function Dashboard() {
                   </select>
                   
                   <select 
-                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-300 transition-colors"
+                    className="w-full px-2 sm:px-2.5 py-2 border border-gray-200 dark:border-gray-600 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700/50 dark:text-white hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
                     value={selectedFilters.ageLimit}
                     onChange={(e) => setSelectedFilters({...selectedFilters, ageLimit: e.target.value})}
                   >
@@ -856,64 +977,113 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredJobs.length === 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+              {filteredAndSortedJobs.length === 0 ? (
                 <div className="col-span-full text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Building className="h-8 w-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No jobs found</h3>
-                  <p className="text-gray-600">Try adjusting your filters or search terms.</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No jobs found</h3>
+                  <p className="text-gray-600 dark:text-gray-300">Try adjusting your filters or search terms.</p>
                 </div>
               ) : (
-                filteredJobs.slice(0, 24).map((job) => (
-                  <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 h-full">
-                    {/* Job Title */}
-                    <div className="mb-3">
-                      <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-1">
-                        {job.title}
-                      </h3>
-                      <p className="text-xs text-gray-600 truncate">
-                        {job.organization || job.company}
-                      </p>
+                filteredAndSortedJobs.slice(0, 24).map((job) => (
+                  <div key={job.id} className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 group">
+                    {/* Compact Header with Title & Organization */}
+                    <div className="flex items-start justify-between mb-1.5">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <h3 className="text-xs font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-0.5">
+                          {job.title}
+                        </h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                          {job.organization || job.company}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-600">
+                          {sortBy === 'recent' && job.posted_date ? 'New' : 'Permanent'}
+                        </div>
+                      </div>
                     </div>
                     
-                    {/* Job Details Grid */}
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center space-x-1 text-red-600">
-                          <Clock className="h-3 w-3 flex-shrink-0" />
-                          <span className="font-medium truncate">
-                            {job.apply_last_date || job.application_deadline || job.last_date || 'Check notification'}
-                          </span>
-                        </div>
-                        <div className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                          Permanent
+                    {/* Horizontal Info Bar */}
+                    <div className="flex items-center justify-between text-xs mb-1.5 bg-gray-50 rounded-lg p-1.5">
+                      {/* Deadline Section */}
+                      <div className="flex items-center space-x-1 text-red-600 flex-1">
+                        <Clock className="h-2.5 w-2.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-medium truncate text-xs">
+                            {(() => {
+                              const deadline = job.apply_last_date || job.application_deadline || job.last_date
+                              if (deadline) {
+                                try {
+                                  return new Date(deadline).toLocaleDateString('en-IN', { 
+                                    day: '2-digit', 
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })
+                                } catch {
+                                  return deadline
+                                }
+                              }
+                              return 'Check notification'
+                            })()} 
+                          </div>
+                          <div className="text-xs text-red-500 font-medium">
+                            {(() => {
+                              const deadline = job.apply_last_date || job.application_deadline || job.last_date
+                              if (deadline) {
+                                try {
+                                  const deadlineDate = new Date(deadline)
+                                  const today = new Date()
+                                  const diffTime = deadlineDate.getTime() - today.getTime()
+                                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                                  
+                                  if (diffDays < 0) {
+                                    return 'Expired'
+                                  } else if (diffDays === 0) {
+                                    return 'Today'
+                                  } else if (diffDays === 1) {
+                                    return '1 day left'
+                                  } else {
+                                    return `${diffDays} days left`
+                                  }
+                                } catch {
+                                  return ''
+                                }
+                              }
+                              return ''
+                            })()}
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between text-xs text-gray-600">
-                        <div className="flex items-center space-x-1">
-                          <Users className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span>{job.vacancies || 'Multiple'} posts</span>
+                      {/* Divider */}
+                      <div className="w-px h-6 bg-gray-300 mx-1.5"></div>
+                      
+                      {/* Vacancies & Fee */}
+                      <div className="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                        <div className="flex items-center space-x-0.5">
+                          <Users className="h-2.5 w-2.5 text-gray-400" />
+                          <span className="font-medium text-xs">{job.vacancies || 'Multiple'}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <TrendingUp className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span className="font-medium">{job.fee ? `₹${job.fee}` : 'Free'}</span>
+                        <div className="flex items-center space-x-0.5">
+                          <TrendingUp className="h-2.5 w-2.5 text-gray-400" />
+                          <span className="font-medium text-xs">{job.fee ? `₹${job.fee}` : 'Free'}</span>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Action Buttons */}
-                    <div className="flex space-x-2">
+                    {/* Compact Action Buttons */}
+                    <div className="flex space-x-1">
                       <button
                         onClick={() => {
                           setSelectedJob(job)
                           setShowJobDetails(true)
                         }}
-                        className="flex-1 px-2 py-1.5 border border-gray-200 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-1"
+                        className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center space-x-1 group-hover:border-gray-300 dark:group-hover:border-gray-500"
                       >
-                        <Eye className="h-3 w-3" />
+                        <Eye className="h-2.5 w-2.5" />
                         <span>View</span>
                       </button>
                       <a
@@ -924,9 +1094,9 @@ export default function Dashboard() {
                         })()}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 px-2 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1"
+                        className="flex-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1"
                       >
-                        <ExternalLink className="h-3 w-3" />
+                        <ExternalLink className="h-2.5 w-2.5" />
                         <span>Apply</span>
                       </a>
                     </div>

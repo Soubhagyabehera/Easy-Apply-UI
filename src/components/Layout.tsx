@@ -2,9 +2,10 @@ import { ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Building2, User, Home, FileText, 
-  Menu, X, Bell, Zap, Folder, ChevronDown, LogIn, UserPlus, Settings, FolderOpen 
+  Menu, X, Bell, Zap, Folder, ChevronDown, LogIn, UserPlus, Settings, FolderOpen, Sun, Moon 
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface LayoutProps {
   children: ReactNode
@@ -14,6 +15,7 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
 
@@ -33,9 +35,9 @@ export default function Layout({ children }: LayoutProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Navigation */}
-      <nav className="bg-white shadow-lg border-b border-gray-200">
+      <nav className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex justify-between h-14 sm:h-16">
             {/* Logo */}
@@ -45,8 +47,8 @@ export default function Layout({ children }: LayoutProps) {
                   <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div className="hidden xs:block">
-                  <span className="text-base sm:text-lg font-bold text-gray-900">Applyze</span>
-                  <span className="text-xs text-gray-500 block">Job Portal</span>
+                  <span className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 dark:text-white">Applyze</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block hidden sm:block">Job Portal</span>
                 </div>
               </Link>
             </div>
@@ -61,8 +63,8 @@ export default function Layout({ children }: LayoutProps) {
                     to={item.path}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive(item.path)
-                        ? 'text-blue-600 bg-blue-50 border border-blue-200'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        ? 'text-blue-600 bg-blue-50 border border-blue-200 dark:text-blue-400 dark:bg-blue-900/20 dark:border-blue-800'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -72,14 +74,29 @@ export default function Layout({ children }: LayoutProps) {
               })}
             </div>
 
-            {/* Right side - Notifications, Profile */}
+            {/* Right side - Theme Toggle, Notifications, Profile */}
             <div className="flex items-center space-x-2 sm:space-x-4">
 
-              {/* Notifications - Smaller on mobile */}
-              <button className="relative p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 h-1.5 w-1.5 sm:h-2 sm:w-2 bg-red-500 rounded-full"></span>
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              >
+                {theme === 'light' ? (
+                  <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
+                ) : (
+                  <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
+                )}
               </button>
+
+              {/* Notifications - Only show when authenticated */}
+              {isAuthenticated && (
+                <button className="relative p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 h-1.5 w-1.5 sm:h-2 sm:w-2 bg-red-500 rounded-full"></span>
+                </button>
+              )}
 
               {/* Authentication / Profile Area */}
               {isAuthenticated ? (
@@ -154,7 +171,7 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <button
                     onClick={() => navigate('/signin')}
-                    className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="hidden xs:inline">Sign In</span>
@@ -209,7 +226,7 @@ export default function Layout({ children }: LayoutProps) {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-3 sm:py-6 px-2 sm:px-4 lg:px-8">
+      <main className="max-w-full mx-auto py-4 px-2 sm:px-3 lg:px-4">
         {children}
       </main>
     </div>

@@ -227,12 +227,12 @@ export default function ApplicationsPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Inject custom date picker styles */}
       <style>{datePickerStyles}</style>
       
       {/* Container for consistent width */}
-      <div className="px-4 sm:px-6 lg:px-8">
+      <div>
         {/* Hero Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white mb-4 sm:mb-6 lg:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">

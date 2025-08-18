@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import SignInPage from './pages/SignInPage'
@@ -15,7 +16,8 @@ import JobsPage from './pages/JobsPage'
 
 function App() {
   return (
-    <AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
       <Routes>
         {/* Default landing page - Dashboard with jobs */}
         <Route path="/" element={
@@ -89,7 +91,8 @@ function App() {
           </ProtectedRoute>
         } />
       </Routes>
-    </AuthProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

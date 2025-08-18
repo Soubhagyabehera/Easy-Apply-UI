@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, Building, DollarSign, ExternalLink, Clock, Briefcase, CheckCircle } from 'lucide-react'
+import { ArrowLeft, MapPin, Building, DollarSign, ExternalLink, Clock, Briefcase, CheckCircle, Calendar, Users, FileText, Award, AlertCircle } from 'lucide-react'
 import { jobService } from '../services/jobService'
 import { Job } from '../types/job'
 
@@ -30,7 +30,7 @@ export default function JobDetailPage() {
     return (
       <div className="px-3 sm:px-4 lg:px-0">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </div>
     )
@@ -87,8 +87,9 @@ export default function JobDetailPage() {
               {job.title}
             </h1>
             
+            
             {/* Key Info Grid - Mobile Optimized */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                 <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
                 <div>
@@ -111,7 +112,7 @@ export default function JobDetailPage() {
                 <Briefcase className="h-5 w-5 text-gray-500 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Type</p>
-                  <p className="text-sm font-semibold text-gray-900">{job.contract_or_permanent || 'Permanent'}</p>
+                  <p className="text-sm font-semibold text-gray-900 capitalize">{job.contract_or_permanent || 'Permanent'}</p>
                 </div>
               </div>
               
@@ -119,9 +120,29 @@ export default function JobDetailPage() {
                 <Clock className="h-5 w-5 text-gray-500 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</p>
-                  <p className="text-sm font-semibold text-gray-900">{job.application_status || 'Open'}</p>
+                  <p className="text-sm font-semibold text-gray-900 capitalize">{job.application_status || 'Open'}</p>
                 </div>
               </div>
+              
+              {job.posted_date && (
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <Calendar className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Posted</p>
+                    <p className="text-sm font-semibold text-gray-900">{new Date(job.posted_date).toLocaleDateString('en-IN')}</p>
+                  </div>
+                </div>
+              )}
+              
+              {job.job_type && (
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <Award className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Job Type</p>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">{job.job_type}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Apply Button - Prominent and Mobile-First */}
@@ -264,85 +285,123 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Additional Information */}
+        {/* Vacancy & Fee Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
           <div className="p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Additional Information</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+              <Users className="h-5 w-5 mr-2 text-blue-600" />
+              Vacancy & Fee Details
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-600 mb-1">Application Deadline</p>
-                <p className="text-gray-900 font-semibold">{job.application_deadline || 'Check notification'}</p>
-              </div>
-              
-              {/* Category-wise Vacancies */}
-              {job.category_wise_vacancies && Object.keys(job.category_wise_vacancies).length > 0 ? (
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm font-medium text-green-600 mb-2">Category-wise Vacancies</p>
-                  <div className="space-y-1">
-                    {Object.entries(job.category_wise_vacancies).map(([category, count]) => (
-                      <div key={category} className="flex justify-between text-sm">
-                        <span className="text-gray-700">{category}:</span>
-                        <span className="font-semibold text-gray-900">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : job.vacancies ? (
+              {/* Total Vacancies */}
+              {job.vacancies && (
                 <div className="p-4 bg-green-50 rounded-lg">
                   <p className="text-sm font-medium text-green-600 mb-1">Total Vacancies</p>
-                  <p className="text-gray-900 font-semibold">{job.vacancies}</p>
-                </div>
-              ) : (
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm font-medium text-green-600 mb-1">Vacancies</p>
-                  <p className="text-gray-900 font-semibold">Check notification</p>
+                  <p className="text-2xl font-bold text-gray-900">{job.vacancies}</p>
                 </div>
               )}
               
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <p className="text-sm font-medium text-purple-600 mb-1">Application Mode</p>
-                <p className="text-gray-900 font-semibold capitalize">{job.application_mode || 'Online'}</p>
-              </div>
-              
-              {/* Fee Structure */}
-              {job.fee_structure && Object.keys(job.fee_structure).length > 0 ? (
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-sm font-medium text-orange-600 mb-2">Application Fee</p>
-                  <div className="space-y-1">
-                    {Object.entries(job.fee_structure).map(([category, fee]) => (
-                      <div key={category} className="flex justify-between text-sm">
-                        <span className="text-gray-700">{category}:</span>
-                        <span className="font-semibold text-gray-900">₹{fee}</span>
+              {/* Category-wise Vacancies */}
+              {job.category_wise_vacancies && Object.keys(job.category_wise_vacancies).length > 0 && (
+                <div className="p-4 bg-green-50 rounded-lg col-span-1 sm:col-span-2">
+                  <p className="text-sm font-medium text-green-600 mb-3">Category-wise Vacancies</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {Object.entries(job.category_wise_vacancies).map(([category, count]) => (
+                      <div key={category} className="text-center p-2 bg-white rounded border">
+                        <div className="text-lg font-bold text-gray-900">{count}</div>
+                        <div className="text-xs text-gray-600 uppercase">{category}</div>
                       </div>
                     ))}
                   </div>
                 </div>
-              ) : job.fee ? (
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-sm font-medium text-orange-600 mb-1">Application Fee</p>
-                  <p className="text-gray-900 font-semibold">₹{job.fee}</p>
-                </div>
-              ) : null}
+              )}
               
-              {/* Important Dates */}
+              {/* Fee Structure */}
+              {job.fee_structure && Object.keys(job.fee_structure).length > 0 && (
+                <div className="p-4 bg-orange-50 rounded-lg col-span-1 sm:col-span-2">
+                  <p className="text-sm font-medium text-orange-600 mb-3">Application Fee Structure</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {Object.entries(job.fee_structure).map(([category, fee]) => (
+                      <div key={category} className="text-center p-2 bg-white rounded border">
+                        <div className="text-lg font-bold text-gray-900">₹{fee}</div>
+                        <div className="text-xs text-gray-600 uppercase">{category}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {job.application_mode && (
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <p className="text-sm font-medium text-purple-600 mb-1">Application Mode</p>
+                  <p className="text-gray-900 font-semibold capitalize">{job.application_mode}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Important Dates & Deadlines */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+          <div className="p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-red-600" />
+              Important Dates
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {job.application_deadline && (
+                <div className="p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+                  <div className="flex items-center mb-2">
+                    <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                    <p className="text-sm font-medium text-red-600">Application Deadline</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold">{new Date(job.application_deadline).toLocaleDateString('en-IN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</p>
+                </div>
+              )}
+              
               {job.exam_date && (
-                <div className="p-4 bg-red-50 rounded-lg">
-                  <p className="text-sm font-medium text-red-600 mb-1">Exam Date</p>
-                  <p className="text-gray-900 font-semibold">{new Date(job.exam_date).toLocaleDateString()}</p>
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <FileText className="h-4 w-4 text-blue-600 mr-2" />
+                    <p className="text-sm font-medium text-blue-600">Exam Date</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold">{new Date(job.exam_date).toLocaleDateString('en-IN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</p>
                 </div>
               )}
               
               {job.admit_card_release_date && (
                 <div className="p-4 bg-yellow-50 rounded-lg">
-                  <p className="text-sm font-medium text-yellow-600 mb-1">Admit Card Release</p>
-                  <p className="text-gray-900 font-semibold">{new Date(job.admit_card_release_date).toLocaleDateString()}</p>
+                  <div className="flex items-center mb-2">
+                    <FileText className="h-4 w-4 text-yellow-600 mr-2" />
+                    <p className="text-sm font-medium text-yellow-600">Admit Card Release</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold">{new Date(job.admit_card_release_date).toLocaleDateString('en-IN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</p>
                 </div>
               )}
               
               {job.result_date && (
-                <div className="p-4 bg-indigo-50 rounded-lg">
-                  <p className="text-sm font-medium text-indigo-600 mb-1">Result Date</p>
-                  <p className="text-gray-900 font-semibold">{new Date(job.result_date).toLocaleDateString()}</p>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <Award className="h-4 w-4 text-green-600 mr-2" />
+                    <p className="text-sm font-medium text-green-600">Result Date</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold">{new Date(job.result_date).toLocaleDateString('en-IN', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</p>
                 </div>
               )}
             </div>
