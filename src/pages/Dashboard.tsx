@@ -433,25 +433,13 @@ export default function Dashboard() {
               ))}
             </div>
             
-            {/* Mobile: Sort + Categories + Filter Button */}
+            {/* Mobile: Categories + Sort + Filter Button */}
             <div className="space-y-2 mb-2">
-              {/* Sort Dropdown for Mobile */}
-              <select 
-                className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'deadline' | 'vacancy' | 'recent' | 'default')}
-              >
-                <option value="default">🔄 Sort By</option>
-                <option value="deadline">⏰ Deadline (Earliest First)</option>
-                <option value="vacancy">👥 Vacancy (Highest First)</option>
-                <option value="recent">📅 Recently Posted</option>
-              </select>
-              
-              {/* Categories + Filter Button */}
+              {/* Categories + Sort + Filter Button Row */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 overflow-x-auto scrollbar-hide">
                   <div className="flex gap-1.5 pb-1">
-                    {jobCategories.slice(0, 6).map((category) => (
+                    {jobCategories.slice(0, 4).map((category) => (
                       <button
                         key={category.id}
                         onClick={() => {
@@ -461,7 +449,7 @@ export default function Dashboard() {
                         className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                           selectedCategory === category.id 
                             ? 'bg-blue-600 text-white' 
-                            : 'bg-gray-100 text-gray-700'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         <span className="text-xs">{category.icon}</span>
@@ -469,12 +457,24 @@ export default function Dashboard() {
                         <span className={`text-xs px-1 py-0.5 rounded-full ${
                           selectedCategory === category.id 
                             ? 'bg-blue-500 text-white' 
-                            : 'bg-white text-gray-600'
+                            : 'bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-200'
                         }`}>{category.jobCount}</span>
                       </button>
                     ))}
                   </div>
                 </div>
+                
+                {/* Sort By Dropdown - Mobile */}
+                <select 
+                  className="flex-shrink-0 px-2 py-1 border border-gray-200 dark:border-gray-600 rounded-full text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 min-w-[80px]"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'deadline' | 'vacancy' | 'recent' | 'default')}
+                >
+                  <option value="default">Sort</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="vacancy">Vacancy</option>
+                  <option value="recent">Recent</option>
+                </select>
                 <button
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                   className="flex-shrink-0 px-2 py-1 bg-orange-500 text-white rounded-full text-xs font-medium hover:bg-orange-600 transition-colors flex items-center gap-1"
@@ -942,7 +942,7 @@ export default function Dashboard() {
                 className={`inline-flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs font-medium transition-all ${
                   selectedCategory === category.id 
                     ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 <span className="text-xs">{category.icon}</span>
@@ -951,7 +951,7 @@ export default function Dashboard() {
                 <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium ${
                   selectedCategory === category.id 
                     ? 'bg-blue-500 text-white' 
-                    : 'bg-white text-gray-600'
+                    : 'bg-white dark:bg-gray-600 text-gray-600 dark:text-gray-200'
                 }`}>{category.jobCount}</span>
               </button>
             ))}
@@ -1007,7 +1007,7 @@ export default function Dashboard() {
                     </div>
                     
                     {/* Horizontal Info Bar */}
-                    <div className="flex items-center justify-between text-xs mb-1.5 bg-gray-50 rounded-lg p-1.5">
+                    <div className="flex items-center justify-between text-xs mb-1.5 p-1.5">
                       {/* Deadline Section */}
                       <div className="flex items-center space-x-1 text-red-600 flex-1">
                         <Clock className="h-2.5 w-2.5 flex-shrink-0" />
@@ -1062,14 +1062,14 @@ export default function Dashboard() {
                       <div className="w-px h-6 bg-gray-300 mx-1.5"></div>
                       
                       {/* Vacancies & Fee */}
-                      <div className="flex items-center space-x-2 text-gray-600 flex-shrink-0">
+                      <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 flex-shrink-0">
                         <div className="flex items-center space-x-0.5">
-                          <Users className="h-2.5 w-2.5 text-gray-400" />
-                          <span className="font-medium text-xs">{job.vacancies || 'Multiple'}</span>
+                          <Users className="h-2.5 w-2.5 text-gray-400 dark:text-gray-500" />
+                          <span className="font-medium text-xs text-gray-600 dark:text-gray-300">{job.vacancies || 'Multiple'}</span>
                         </div>
                         <div className="flex items-center space-x-0.5">
-                          <TrendingUp className="h-2.5 w-2.5 text-gray-400" />
-                          <span className="font-medium text-xs">{job.fee ? `₹${job.fee}` : 'Free'}</span>
+                          <TrendingUp className="h-2.5 w-2.5 text-gray-400 dark:text-gray-500" />
+                          <span className="font-medium text-xs text-gray-600 dark:text-gray-300">{job.fee ? `₹${job.fee}` : 'Free'}</span>
                         </div>
                       </div>
                     </div>
