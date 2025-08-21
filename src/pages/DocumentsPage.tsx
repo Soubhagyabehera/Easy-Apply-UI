@@ -2830,10 +2830,10 @@ export default function DocumentsPage() {
                               if (canvasRef) {
                                 const ctx = canvasRef.getContext('2d');
                                 if (ctx) {
-                                  const rect = canvasRef.getBoundingClientRect();
                                   ctx.fillStyle = 'white';
-                                  ctx.fillRect(0, 0, rect.width, rect.height);
+                                  ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
                                   setSignatureData('');
+                                  setShowSignaturePreview(false);
                                 }
                               }
                             }}
