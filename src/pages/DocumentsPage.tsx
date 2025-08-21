@@ -1529,7 +1529,7 @@ export default function DocumentsPage() {
                                 setActiveTab('manager')
                                 setSelectedDocumentType(docType)
                               }}
-                              className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                              className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium flex-shrink-0 min-w-0"
                             >
                               Upload
                             </button>
@@ -1572,7 +1572,7 @@ export default function DocumentsPage() {
                               }
                               setSelectedDocumentType(docTypeMapping[doc.name] || 'other')
                             }}
-                            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                            className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium flex-shrink-0 min-w-0"
                           >
                             Upload
                           </button>

@@ -9,15 +9,10 @@ export default function Dashboard() {
   const { isAuthenticated } = useAuth()
   const [selectedFilters, setSelectedFilters] = useState({
     location: '',
-    department: '',
+    qualification: '',
     jobType: '',
     experience: '',
-    salary: '',
-    ageLimit: '',
-    qualification: '',
-    applicationStatus: '',
-    applicationMode: '',
-    examDate: ''
+    department: ''
   })
   const [sortBy, setSortBy] = useState<'deadline' | 'vacancy' | 'recent' | 'default'>('default')
   
@@ -33,6 +28,10 @@ export default function Dashboard() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [jobStatus, setJobStatus] = useState<'active' | 'admit-card' | 'results' | 'all'>('active')
   
+  // Lazy loading state
+  const [displayedJobsCount, setDisplayedJobsCount] = useState(24)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  
   // Fetch government jobs on component mount
   useEffect(() => {
     fetchGovernmentJobs()
@@ -43,7 +42,21 @@ export default function Dashboard() {
     if (!loading) {
       fetchGovernmentJobs()
     }
-  }, [selectedFilters.location, selectedFilters.department])
+  }, [selectedFilters, sortBy, selectedCategory, jobStatus])
+
+  // Reset displayed jobs count when filters change
+  useEffect(() => {
+    setDisplayedJobsCount(24)
+  }, [searchTerm, selectedFilters, sortBy, selectedCategory, jobStatus])
+
+  // Load more jobs function
+  const loadMoreJobs = () => {
+    setIsLoadingMore(true)
+    setTimeout(() => {
+      setDisplayedJobsCount(prev => prev + 24)
+      setIsLoadingMore(false)
+    }, 500) // Simulate loading delay
+  }
 
   // Handle search suggestions
   useEffect(() => {
@@ -984,18 +997,19 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
-              {filteredAndSortedJobs.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building className="h-8 w-8 text-gray-400" />
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+                {filteredAndSortedJobs.length === 0 ? (
+                  <div className="col-span-full text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Building className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No jobs found</h3>
+                    <p className="text-gray-600 dark:text-gray-300">Try adjusting your filters or search terms.</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No jobs found</h3>
-                  <p className="text-gray-600 dark:text-gray-300">Try adjusting your filters or search terms.</p>
-                </div>
-              ) : (
-                filteredAndSortedJobs.slice(0, 24).map((job) => (
-                  <div key={job.id} className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 group">
+                ) : (
+                  filteredAndSortedJobs.slice(0, displayedJobsCount).map((job) => (
+                    <div key={job.id} className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 group">
                     {/* Compact Header with Title & Organization */}
                     <div className="flex items-start justify-between mb-1.5">
                       <div className="flex-1 min-w-0 pr-2">
@@ -1154,9 +1168,35 @@ export default function Dashboard() {
                       </a>
                     </div>
                   </div>
-                ))
+                  ))
+                )}
+              </div>
+              
+              {/* Load More Button */}
+              {filteredAndSortedJobs.length > displayedJobsCount && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    onClick={loadMoreJobs}
+                    disabled={isLoadingMore}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Load More Jobs</span>
+                        <span className="bg-blue-500 px-2 py-1 rounded text-xs">
+                          +{Math.min(24, filteredAndSortedJobs.length - displayedJobsCount)}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
