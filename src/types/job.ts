@@ -53,20 +53,11 @@ export interface Job {
   updated_at?: string
   status?: 'active' | 'admit-card' | 'results' | 'closed'
   
-  // Legacy/backward compatibility fields
-  id?: number
-  organization?: string  // Maps to company
-  apply_last_date?: string  // Maps to posted_date
-  description?: string  // Maps to job_description
-  requirements?: string[]
-  salary_range?: string
-  is_active?: boolean
-  apply_url?: string  // Maps to apply_link
-  career_url?: string
-  last_date?: string
-  department?: string
-  experience_required?: string
-  category?: string
+  // Legacy/backward compatibility fields (actively used)
+  organization?: string  // Maps to company - used in search/filtering
+  apply_last_date?: string  // Maps to posted_date - used in deadline sorting
+  last_date?: string  // Used in job expiration logic
+  department?: string  // Used in search functionality
   jobType?: 'permanent' | 'temporary' | 'contract' | 'internship'
   eligibility?: {
     education: string[]

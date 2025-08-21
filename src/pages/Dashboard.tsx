@@ -104,7 +104,14 @@ export default function Dashboard() {
     try {
       const deadlineDate = new Date(deadline)
       const today = new Date()
-      today.setHours(23, 59, 59, 999) // Set to end of today
+      
+      // Set deadline to end of the deadline day (23:59:59)
+      deadlineDate.setHours(23, 59, 59, 999)
+      
+      // Set today to start of today (00:00:00) for proper comparison
+      today.setHours(0, 0, 0, 0)
+      
+      // Job is expired if deadline has passed (deadline < today)
       return deadlineDate.getTime() < today.getTime()
     } catch {
       return false
@@ -144,8 +151,8 @@ export default function Dashboard() {
       switch (sortBy) {
         case 'deadline':
           // Sort by application deadline (earliest first)
-          const dateA = new Date(a.apply_last_date || a.application_deadline || a.last_date || '9999-12-31')
-          const dateB = new Date(b.apply_last_date || b.application_deadline || b.last_date || '9999-12-31')
+          const dateA = new Date(a.application_deadline || a.last_date || '9999-12-31')
+          const dateB = new Date(b.application_deadline || b.last_date || '9999-12-31')
           return dateA.getTime() - dateB.getTime()
         
         case 'vacancy':
@@ -285,10 +292,10 @@ export default function Dashboard() {
                           <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">{job.organization || job.company}</p>
                           <div className="flex items-center space-x-2 text-xs text-gray-500">
                             <span>{job.location}</span>
-                            {job.apply_last_date && (
+                            {(job.application_deadline || job.last_date) && (
                               <>
                                 <span>•</span>
-                                <span>Apply by: {new Date(job.apply_last_date).toLocaleDateString()}</span>
+                                <span>Apply by: {new Date(job.application_deadline || job.last_date).toLocaleDateString()}</span>
                               </>
                             )}
                           </div>
@@ -1009,29 +1016,75 @@ export default function Dashboard() {
                     {/* Horizontal Info Bar */}
                     <div className="flex items-center justify-between text-xs mb-1.5 p-1.5">
                       {/* Deadline Section */}
-                      <div className="flex items-center space-x-1 text-red-600 flex-1">
+                      <div className={`flex items-center space-x-1 flex-1 ${(() => {
+                        const deadline = job.application_deadline || job.last_date
+                        if (deadline) {
+                          try {
+                            const deadlineDate = new Date(deadline)
+                            const today = new Date()
+                            const diffTime = deadlineDate.getTime() - today.getTime()
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                            
+                            if (diffDays < 0) {
+                              return 'text-gray-500' // Expired
+                            } else if (diffDays < 7) {
+                              return 'text-red-500' // <7 days - Red (closing soon)
+                            } else if (diffDays <= 30) {
+                              return 'text-orange-500' // 7-30 days - Orange (moderate urgency)
+                            } else {
+                              return 'text-green-600' // >30 days - Green (plenty of time)
+                            }
+                          } catch {
+                            return 'text-gray-500'
+                          }
+                        }
+                        return 'text-gray-500'
+                      })()}`}>
                         <Clock className="h-2.5 w-2.5 flex-shrink-0" />
                         <div className="min-w-0">
                           <div className="font-medium truncate text-xs">
                             {(() => {
-                              const deadline = job.apply_last_date || job.application_deadline || job.last_date
+                              const deadline = job.application_deadline || job.last_date
                               if (deadline) {
                                 try {
                                   return new Date(deadline).toLocaleDateString('en-IN', { 
-                                    day: '2-digit', 
+                                    day: '2-digit',
                                     month: 'short',
                                     year: 'numeric'
                                   })
                                 } catch {
-                                  return deadline
+                                  return 'Invalid Date'
                                 }
                               }
-                              return 'Check notification'
-                            })()} 
+                              return 'No deadline'
+                            })()}
                           </div>
-                          <div className="text-xs text-red-500 font-medium">
+                          <div className={`text-xs font-medium ${(() => {
+                            const deadline = job.application_deadline || job.last_date
+                            if (deadline) {
+                              try {
+                                const deadlineDate = new Date(deadline)
+                                const today = new Date()
+                                const diffTime = deadlineDate.getTime() - today.getTime()
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                                
+                                if (diffDays < 0) {
+                                  return 'text-gray-500' // Expired
+                                } else if (diffDays < 7) {
+                                  return 'text-red-500' // <7 days - Red (closing soon)
+                                } else if (diffDays <= 30) {
+                                  return 'text-orange-500' // 7-30 days - Orange (moderate urgency)
+                                } else {
+                                  return 'text-green-600' // >30 days - Green (plenty of time)
+                                }
+                              } catch {
+                                return 'text-gray-500'
+                              }
+                            }
+                            return 'text-gray-500'
+                          })()}`}>
                             {(() => {
-                              const deadline = job.apply_last_date || job.application_deadline || job.last_date
+                              const deadline = job.application_deadline || job.last_date
                               if (deadline) {
                                 try {
                                   const deadlineDate = new Date(deadline)

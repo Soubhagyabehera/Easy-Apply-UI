@@ -109,6 +109,7 @@ class DocumentManagerService {
 
       const response = await apiClient.post(API_ENDPOINTS.documentManager.upload, formData, {
         headers: {
+          ...this.getAuthHeaders(),
           'Content-Type': 'multipart/form-data',
         },
       });
@@ -125,7 +126,9 @@ class DocumentManagerService {
    */
   async getUserDocuments(): Promise<DocumentListResponse> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.documentManager.documents);
+      const response = await apiClient.get(API_ENDPOINTS.documentManager.documents, {
+        headers: this.getAuthHeaders(),
+      });
       return response.data;
     } catch (error: any) {
       console.error('Get documents error:', error);
@@ -138,7 +141,9 @@ class DocumentManagerService {
    */
   async deleteDocument(documentId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await apiClient.delete(API_ENDPOINTS.documentManager.document(documentId));
+      const response = await apiClient.delete(API_ENDPOINTS.documentManager.document(documentId), {
+        headers: this.getAuthHeaders(),
+      });
       return response.data;
     } catch (error: any) {
       console.error('Delete document error:', error);
@@ -156,12 +161,44 @@ class DocumentManagerService {
     try {
       const response = await apiClient.post(
         API_ENDPOINTS.documentManager.formatForJob(jobId),
-        jobRequirements || {}
+        jobRequirements || {},
+        {
+          headers: this.getAuthHeaders(),
+        }
       );
       return response.data;
     } catch (error: any) {
       console.error('Format documents error:', error);
       throw new Error(error.response?.data?.detail || error.message || 'Formatting failed');
+    }
+  }
+
+  /**
+   * Download a specific document
+   */
+  async downloadDocument(documentId: string, filename?: string): Promise<void> {
+    try {
+      const response = await apiClient.get(
+        `/document-manager/download/${documentId}`,
+        { 
+          responseType: 'blob',
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      // Create blob and download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `document_${documentId}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error: any) {
+      console.error('Download document error:', error);
+      throw new Error(error.response?.data?.detail || error.message || 'Download failed');
     }
   }
 
@@ -172,7 +209,10 @@ class DocumentManagerService {
     try {
       const response = await apiClient.get(
         API_ENDPOINTS.documentManager.downloadBundle(batchId),
-        { responseType: 'blob' }
+        { 
+          responseType: 'blob',
+          headers: this.getAuthHeaders(),
+        }
       );
 
       // Create blob and download
@@ -222,7 +262,9 @@ class DocumentManagerService {
    */
   async getDocumentStats(): Promise<DocumentStats> {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.documentManager.stats);
+      const response = await apiClient.get(API_ENDPOINTS.documentManager.stats, {
+        headers: this.getAuthHeaders(),
+      });
       return response.data;
     } catch (error: any) {
       console.error('Get stats error:', error);

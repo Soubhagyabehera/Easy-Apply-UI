@@ -72,6 +72,7 @@ export default function DocumentsPage() {
   const [isDrawing, setIsDrawing] = useState(false)
   const [signatureData, setSignatureData] = useState<string>('')
   const [signatureText, setSignatureText] = useState<string>('')
+  const [showSignaturePreview, setShowSignaturePreview] = useState<boolean>(false)
   const [conversionFormat, setConversionFormat] = useState<'JPG' | 'PNG' | 'PDF' | 'DOCX'>('PDF')
   const [enhanceImages, setEnhanceImages] = useState<boolean>(true)
   const [autoCrop, setAutoCrop] = useState<boolean>(true)
@@ -174,13 +175,15 @@ export default function DocumentsPage() {
     const loadDocumentStats = async () => {
       if (isAuthenticated && activeTab === 'documents') {
         try {
-          const [documentsResponse, statsResponse] = await Promise.all([
+          const [documentsResponse, statsResponse, typesResponse] = await Promise.all([
             documentManagerService.getUserDocuments(),
-            documentManagerService.getDocumentStats()
+            documentManagerService.getDocumentStats(),
+            documentManagerService.getDocumentTypes()
           ]);
           
           setUserDocuments(documentsResponse.documents);
           setRealDocumentStats(statsResponse);
+          setDocumentTypes(typesResponse);
         } catch (error) {
           console.error('Failed to load document statistics:', error);
           // Fallback to mock data if API fails
@@ -276,30 +279,12 @@ export default function DocumentsPage() {
   const handleDownloadDocument = async (document: any) => {
     try {
       if (document.document_id) {
-        // For real documents from backend
+        // For real documents from backend - use the service method with proper auth
         console.log('Downloading document:', document.document_id)
-        const token = localStorage.getItem('token') || 'demo_token_user1'
-        const response = await fetch(`http://localhost:8000/api/v1/document-manager/download/${document.document_id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (response.ok) {
-          const blob = await response.blob()
-          const url = URL.createObjectURL(blob)
-          const a = window.document.createElement('a')
-          a.href = url
-          a.download = document.original_filename || 'document'
-          window.document.body.appendChild(a)
-          a.click()
-          window.document.body.removeChild(a)
-          URL.revokeObjectURL(url)
-        } else {
-          const errorText = await response.text()
-          console.error('Download failed:', errorText)
-          throw new Error(`Download failed: ${response.status} - ${errorText}`)
-        }
+        await documentManagerService.downloadDocument(
+          document.document_id, 
+          document.original_filename || 'document'
+        )
       } else {
         // For uploaded files
         if (document instanceof File) {
@@ -1380,7 +1365,12 @@ export default function DocumentsPage() {
                   </div>
                   <div>
                     <p className="text-xs sm:text-sm font-medium text-red-600">Missing</p>
-                    <p className="text-lg sm:text-xl font-bold text-red-900">{requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length}</p>
+                    <p className="text-lg sm:text-xl font-bold text-red-900">
+                      {documentTypes ? 
+                        (documentTypes.total_types - userDocuments.length) : 
+                        requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length
+                      }
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1390,12 +1380,22 @@ export default function DocumentsPage() {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Document Completion</span>
-                <span className="text-sm text-gray-500">{Math.round((userDocuments.length / Math.max(requiredDocuments.length, 1)) * 100)}%</span>
+                <span className="text-sm text-gray-500">
+                  {documentTypes ? 
+                    Math.round((userDocuments.length / Math.max(documentTypes.total_types, 1)) * 100) : 
+                    Math.round((userDocuments.length / Math.max(requiredDocuments.length, 1)) * 100)
+                  }%
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-green-600 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${Math.min(100, Math.round((userDocuments.length / Math.max(requiredDocuments.length, 1)) * 100))}%` }}
+                  style={{ 
+                    width: `${Math.min(100, documentTypes ? 
+                      Math.round((userDocuments.length / Math.max(documentTypes.total_types, 1)) * 100) : 
+                      Math.round((userDocuments.length / Math.max(requiredDocuments.length, 1)) * 100)
+                    )}%` 
+                  }}
                 ></div>
               </div>
             </div>
@@ -1488,62 +1488,97 @@ export default function DocumentsPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">Missing Documents</h3>
                   <span className="px-2 py-1 bg-red-100 text-red-700 text-xs sm:text-sm rounded-full font-medium">
-                    {requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length} missing
+                    {documentTypes ? 
+                      (documentTypes.total_types - userDocuments.length) : 
+                      requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length
+                    } missing
                   </span>
                 </div>
               </div>
               <div className="p-4 sm:p-6">
-                {requiredDocuments.filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active)).length === 0 ? (
+                {documentTypes && documentTypes.total_types <= userDocuments.length ? (
                   <div className="text-center py-8">
                     <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                    <p className="text-green-600 font-medium">All required documents uploaded!</p>
-                    <p className="text-gray-500 text-sm mt-1">You're ready to apply for jobs</p>
+                    <p className="text-green-600 font-medium">All document types uploaded!</p>
+                    <p className="text-gray-500 text-sm mt-1">You can upload more documents in Document Manager</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {requiredDocuments
-                      .filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active))
-                      .map((doc, index) => (
-                      <div key={index} className="flex items-start justify-between p-3 bg-red-50 rounded-lg border border-red-100">
-                        <div className="flex items-start space-x-3">
-                          <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                            doc.required ? 'border-red-400 bg-red-100' : 'border-gray-300'
-                          }`}>
-                            {doc.required && <X className="h-2.5 w-2.5 text-red-600" />}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center space-x-2">
-                              <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                              {doc.required && (
-                                <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded font-medium">Required</span>
-                              )}
+                    {documentTypes ? (
+                      // Show missing document types from Document Manager
+                      Object.entries(documentTypes.categories).map(([category, types]) => 
+                        types.filter(docType => !userDocuments.some(uploaded => uploaded.document_type === docType)).map(docType => (
+                          <div key={docType} className="flex items-start justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                            <div className="flex items-start space-x-3">
+                              <div className="mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center border-red-400 bg-red-100">
+                                <X className="h-2.5 w-2.5 text-red-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <p className="text-sm font-medium text-gray-900">{getDocumentDisplayName(docType)}</p>
+                                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium">{category}</span>
+                                </div>
+                                <p className="text-xs text-gray-600 mt-1">Document type: {docType}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Supported formats: PDF, JPG, PNG, DOC, DOCX
+                                </p>
+                              </div>
                             </div>
-                            <p className="text-xs text-gray-600 mt-1">{doc.description}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Max: {doc.maxSize} | Formats: {doc.formats.join(', ')}
-                            </p>
+                            <button
+                              onClick={() => {
+                                setActiveTab('manager')
+                                setSelectedDocumentType(docType)
+                              }}
+                              className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                            >
+                              Upload
+                            </button>
                           </div>
+                        ))
+                      ).flat()
+                    ) : (
+                      // Fallback to hardcoded required documents
+                      requiredDocuments
+                        .filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active))
+                        .map((doc, index) => (
+                        <div key={index} className="flex items-start justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                          <div className="flex items-start space-x-3">
+                            <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              doc.required ? 'border-red-400 bg-red-100' : 'border-gray-300'
+                            }`}>
+                              {doc.required && <X className="h-2.5 w-2.5 text-red-600" />}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center space-x-2">
+                                <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                                {doc.required && (
+                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded font-medium">Required</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 mt-1">{doc.description}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Max: {doc.maxSize} | Formats: {doc.formats.join(', ')}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setActiveTab('manager')
+                              const docTypeMapping: { [key: string]: string } = {
+                                'Graduation Certificate': 'certificate_graduation',
+                                'Passport Size Photo': 'photo',
+                                'Digital Signature': 'signature',
+                                'Identity Proof': 'pan'
+                              }
+                              setSelectedDocumentType(docTypeMapping[doc.name] || 'other')
+                            }}
+                            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                          >
+                            Upload
+                          </button>
                         </div>
-                        <button
-                          onClick={() => {
-                            setActiveTab('manager')
-                            // Auto-select the document type based on the missing document
-                            const docTypeMapping: { [key: string]: string } = {
-                              'Final degree certificate from recognized university': 'degree_certificate',
-                              'Passport size photograph with white background': 'photograph',
-                              'Signature on white background': 'signature',
-                              'Valid passport': 'passport',
-                              'Other documents (if applicable)': 'other'
-                            }
-                            const mappedType = docTypeMapping[doc.name] || 'other'
-                            setSelectedDocumentType(mappedType)
-                          }}
-                          className="ml-3 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors flex-shrink-0"
-                        >
-                          Upload
-                        </button>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 )}
               </div>
@@ -2686,46 +2721,63 @@ export default function DocumentsPage() {
                   {signatureType === 'draw' && (
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h4 className="font-semibold text-gray-900 mb-3">Draw Your Signature</h4>
-                      <div className="bg-white border-2 border-gray-300 rounded-lg overflow-hidden">
+                      <div className="bg-white border-2 border-purple-300 rounded-lg overflow-hidden shadow-sm">
                         <canvas
                           ref={(canvas) => {
                             if (canvas && canvas !== canvasRef) {
                               setCanvasRef(canvas);
                               const ctx = canvas.getContext('2d');
                               if (ctx) {
+                                // Set fixed canvas dimensions
+                                canvas.width = 600;
+                                canvas.height = 200;
+                                
+                                // Configure drawing context for smooth lines
                                 ctx.fillStyle = 'white';
                                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                ctx.strokeStyle = '#000000';
-                                ctx.lineWidth = 2;
+                                ctx.strokeStyle = '#1f2937';
+                                ctx.lineWidth = 3;
                                 ctx.lineCap = 'round';
                                 ctx.lineJoin = 'round';
+                                ctx.imageSmoothingEnabled = true;
+                                ctx.imageSmoothingQuality = 'high';
                               }
                             }
                           }}
-                          width={400}
-                          height={160}
-                          className="w-full h-40 cursor-crosshair"
+                          className="w-full h-48 cursor-crosshair touch-none select-none"
+                          style={{ 
+                            width: '100%', 
+                            height: '192px',
+                            touchAction: 'none'
+                          }}
                           onMouseDown={(e) => {
+                            e.preventDefault();
                             setIsDrawing(true);
                             const canvas = e.currentTarget;
                             const rect = canvas.getBoundingClientRect();
                             const ctx = canvas.getContext('2d');
                             if (ctx) {
+                              const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+                              const y = (e.clientY - rect.top) * (canvas.height / rect.height);
                               ctx.beginPath();
-                              ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                              ctx.moveTo(x, y);
                             }
                           }}
                           onMouseMove={(e) => {
                             if (!isDrawing) return;
+                            e.preventDefault();
                             const canvas = e.currentTarget;
                             const rect = canvas.getBoundingClientRect();
                             const ctx = canvas.getContext('2d');
                             if (ctx) {
-                              ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                              const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+                              const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+                              ctx.lineTo(x, y);
                               ctx.stroke();
                             }
                           }}
-                          onMouseUp={() => {
+                          onMouseUp={(e) => {
+                            e.preventDefault();
                             setIsDrawing(false);
                             if (canvasRef) {
                               setSignatureData(canvasRef.toDataURL('image/png'));
@@ -2742,8 +2794,10 @@ export default function DocumentsPage() {
                             const touch = e.touches[0];
                             const ctx = canvas.getContext('2d');
                             if (ctx) {
+                              const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                              const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
                               ctx.beginPath();
-                              ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                              ctx.moveTo(x, y);
                             }
                           }}
                           onTouchMove={(e) => {
@@ -2754,7 +2808,9 @@ export default function DocumentsPage() {
                             const touch = e.touches[0];
                             const ctx = canvas.getContext('2d');
                             if (ctx) {
-                              ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                              const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                              const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                              ctx.lineTo(x, y);
                               ctx.stroke();
                             }
                           }}
@@ -2774,19 +2830,50 @@ export default function DocumentsPage() {
                               if (canvasRef) {
                                 const ctx = canvasRef.getContext('2d');
                                 if (ctx) {
+                                  const rect = canvasRef.getBoundingClientRect();
                                   ctx.fillStyle = 'white';
-                                  ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
+                                  ctx.fillRect(0, 0, rect.width, rect.height);
                                   setSignatureData('');
                                 }
                               }
                             }}
-                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                            className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors font-medium"
                           >
-                            Clear
+                            🗑️ Clear
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (signatureData) {
+                                setShowSignaturePreview(!showSignaturePreview);
+                              }
+                            }}
+                            disabled={!signatureData}
+                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            👁️ {showSignaturePreview ? 'Hide Preview' : 'Preview'}
                           </button>
                         </div>
-                        <p className="text-xs text-gray-500">Draw your signature above</p>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Draw smoothly with mouse or finger</p>
+                          <p className="text-xs text-purple-600 font-medium">✨ High-quality signature ready</p>
+                        </div>
                       </div>
+                      
+                      {/* Signature Preview */}
+                      {showSignaturePreview && signatureData && (
+                        <div className="mt-4 p-4 bg-white border-2 border-purple-200 rounded-lg">
+                          <h5 className="font-semibold text-gray-900 mb-3 text-center">Signature Preview</h5>
+                          <div className="flex justify-center">
+                            <img 
+                              src={signatureData} 
+                              alt="Signature Preview" 
+                              className="max-w-full h-auto border border-gray-200 rounded shadow-sm bg-white"
+                              style={{ maxHeight: '150px' }}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 text-center mt-2">This is how your signature will appear in documents</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
