@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { 
   Folder, Upload, Download, Eye, Trash2, 
@@ -41,6 +41,36 @@ export default function DocumentsPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'documents' | 'manager' | 'tools'>('documents')
 
+  // Refs to scroll into specific panels in My Documents dashboard
+  const uploadedSectionRef = useRef<HTMLDivElement | null>(null)
+  const missingSectionRef = useRef<HTMLDivElement | null>(null)
+  const managerDocumentsRef = useRef<HTMLDivElement | null>(null)
+
+  // Smooth scroll helper with offset (accounts for sticky headers)
+  const scrollToWithOffset = (el: HTMLElement | null, offset = 80) => {
+    if (!el) return
+    const y = el.getBoundingClientRect().top + window.pageYOffset - offset
+    window.scrollTo({ top: y, behavior: 'smooth' })
+  }
+
+  // Handlers to bring sections into view
+  const showUploadedPanel = () => {
+    if (activeTab !== 'documents') setActiveTab('documents')
+    // Defer to next tick to ensure layout is present
+    setTimeout(() => scrollToWithOffset(uploadedSectionRef.current, 80), 0)
+  }
+
+  const showMissingPanel = () => {
+    if (activeTab !== 'documents') setActiveTab('documents')
+    setTimeout(() => scrollToWithOffset(missingSectionRef.current, 80), 0)
+  }
+
+  // Handler to bring Document Manager -> My Documents list into view
+  const showManagerDocuments = () => {
+    if (activeTab !== 'manager') setActiveTab('manager')
+    setTimeout(() => scrollToWithOffset(managerDocumentsRef.current, 80), 0)
+  }
+
   // Handle URL parameters to set active tab
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search)
@@ -77,6 +107,8 @@ export default function DocumentsPage() {
   const [enhanceImages, setEnhanceImages] = useState<boolean>(true)
   const [autoCrop, setAutoCrop] = useState<boolean>(true)
   const [optimizationQuality, setOptimizationQuality] = useState<number>(85)
+  const [targetSizePreset, setTargetSizePreset] = useState<'auto' | '50kb' | '100kb' | '500kb' | '1mb' | '2mb' | 'custom'>('auto')
+  const [customTargetSizeKb, setCustomTargetSizeKb] = useState<number | ''>('')
   
   // Document Manager state
   const [userDocuments, setUserDocuments] = useState<UserDocument[]>([])
@@ -88,6 +120,13 @@ export default function DocumentsPage() {
   const [isFormattingForJob, setIsFormattingForJob] = useState(false)
   const [realDocumentStats, setRealDocumentStats] = useState<any>(null)
   const [showAllUploadedDocs, setShowAllUploadedDocs] = useState(false)
+
+  // Upload progress state
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadingFileName, setUploadingFileName] = useState<string>('')
+  const [uploadBytes, setUploadBytes] = useState<{ loaded: number; total?: number }>({ loaded: 0, total: undefined })
+  const uploadAbortRef = useRef<AbortController | null>(null)
 
   const documentCategories = [
     { id: 'all', name: 'All Documents', icon: Folder },
@@ -696,7 +735,42 @@ export default function DocumentsPage() {
       const pdfFiles = uploadedFiles.filter(f => f.type === 'application/pdf');
       
       if (imageFiles.length > 0) {
-        result = await sizeOptimizerService.optimizeImages(imageFiles, compressionLevel, optimizationQuality);
+        let targetSizeKb: number | undefined = undefined;
+        switch (targetSizePreset) {
+          case '50kb':
+            targetSizeKb = 50; break;
+          case '100kb':
+            targetSizeKb = 100; break;
+          case '500kb':
+            targetSizeKb = 500; break;
+          case '1mb':
+            targetSizeKb = 1024; break;
+          case '2mb':
+            targetSizeKb = 2048; break;
+          case 'custom': {
+            const v = typeof customTargetSizeKb === 'number' ? customTargetSizeKb : Number(customTargetSizeKb);
+            if (!Number.isFinite(v)) {
+              alert('Please enter a valid custom target size in KB.');
+              setIsProcessing(false);
+              return;
+            }
+            // Enforce backend validation limits 10 KB - 10240 KB
+            targetSizeKb = Math.min(10240, Math.max(10, Math.floor(v)));
+            break;
+          }
+          case 'auto':
+          default:
+            targetSizeKb = undefined;
+        }
+
+        result = await sizeOptimizerService.optimizeImages(
+          imageFiles,
+          compressionLevel,
+          optimizationQuality,
+          undefined,
+          undefined,
+          targetSizeKb
+        );
       } else if (pdfFiles.length > 0) {
         result = await sizeOptimizerService.optimizePDFs(pdfFiles, compressionLevel);
       }
@@ -812,14 +886,47 @@ export default function DocumentsPage() {
       return;
     }
 
+    // Prepare progress tracking
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadingFileName(file.name);
+    setUploadBytes({ loaded: 0, total: file.size });
+    const controller = new AbortController();
+    uploadAbortRef.current = controller;
+
     try {
-      const result = await documentManagerService.uploadDocument(file, selectedDocumentType);
+      const result = await documentManagerService.uploadDocument(
+        file,
+        selectedDocumentType,
+        (percent, loaded, total) => {
+          setUploadProgress(percent);
+          setUploadBytes({ loaded, total });
+        },
+        controller.signal
+      );
       alert(`Document uploaded successfully: ${result.original_filename}`);
       await loadUserDocuments(); // Refresh the list
       setSelectedDocumentType('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Document upload failed:', error);
-      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const msg = typeof error?.message === 'string' ? error.message : 'Unknown error';
+      if (msg.toLowerCase().includes('canceled')) {
+        alert('Upload canceled');
+      } else {
+        alert(`Upload failed: ${msg}`);
+      }
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadingFileName('');
+      setUploadBytes({ loaded: 0, total: undefined });
+      uploadAbortRef.current = null;
+    }
+  };
+
+  const cancelUpload = () => {
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current.abort();
     }
   };
 
@@ -1096,7 +1203,12 @@ export default function DocumentsPage() {
           {/* Document Manager Stats */}
           {documentStats && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
+              <button
+                type="button"
+                onClick={showManagerDocuments}
+                className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 w-full text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="View your uploaded documents in Document Manager"
+              >
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Documents</p>
@@ -1106,7 +1218,7 @@ export default function DocumentsPage() {
                     <Folder className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
                   </div>
                 </div>
-              </div>
+              </button>
               <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
@@ -1190,17 +1302,47 @@ export default function DocumentsPage() {
                     if (file) handleDocumentUpload(file);
                   }}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  disabled={isUploading}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 disabled:opacity-60 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Supported: PDF, JPG, PNG, DOC, DOCX (Max 50MB)
                 </p>
+                {isUploading && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      <span className="truncate">
+                        Uploading{uploadingFileName ? `: ${uploadingFileName}` : ''}
+                      </span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                      <span>
+                        {documentManagerService.formatFileSize(uploadBytes.loaded)}
+                        {uploadBytes.total ? ` of ${documentManagerService.formatFileSize(uploadBytes.total)}` : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={cancelUpload}
+                        className="text-red-600 hover:text-red-700 font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* User Documents List */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
+          <div ref={managerDocumentsRef} className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
             <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                 <h2 className="text-lg font-semibold text-gray-900">My Documents</h2>
@@ -1325,7 +1467,12 @@ export default function DocumentsPage() {
             
             {/* Quick Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-              <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
+              <button
+                type="button"
+                onClick={showUploadedPanel}
+                className="bg-blue-50 rounded-lg p-3 sm:p-4 w-full text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="View uploaded documents"
+              >
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg">
                     <Folder className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
@@ -1335,8 +1482,13 @@ export default function DocumentsPage() {
                     <p className="text-lg sm:text-xl font-bold text-blue-900">{stats.total}</p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 sm:p-4">
+              </button>
+              <button
+                type="button"
+                onClick={showUploadedPanel}
+                className="bg-green-50 rounded-lg p-3 sm:p-4 w-full text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                aria-label="View verified documents"
+              >
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-1.5 sm:p-2 bg-green-600 rounded-lg">
                     <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
@@ -1346,8 +1498,13 @@ export default function DocumentsPage() {
                     <p className="text-lg sm:text-xl font-bold text-green-900">{stats.verified}</p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-yellow-50 rounded-lg p-3 sm:p-4">
+              </button>
+              <button
+                type="button"
+                onClick={showMissingPanel}
+                className="bg-yellow-50 rounded-lg p-3 sm:p-4 w-full text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+                aria-label="View pending documents"
+              >
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-1.5 sm:p-2 bg-yellow-600 rounded-lg">
                     <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
@@ -1357,8 +1514,13 @@ export default function DocumentsPage() {
                     <p className="text-lg sm:text-xl font-bold text-yellow-900">{stats.pending}</p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-red-50 rounded-lg p-3 sm:p-4">
+              </button>
+              <button
+                type="button"
+                onClick={showMissingPanel}
+                className="bg-red-50 rounded-lg p-3 sm:p-4 w-full text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                aria-label="View missing documents"
+              >
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <div className="p-1.5 sm:p-2 bg-red-600 rounded-lg">
                     <X className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
@@ -1373,7 +1535,7 @@ export default function DocumentsPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
 
             {/* Progress Bar */}
@@ -1404,7 +1566,7 @@ export default function DocumentsPage() {
           {/* Document Categories Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Uploaded Documents */}
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
+            <div ref={uploadedSectionRef} className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
               <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">Uploaded Documents</h3>
@@ -1483,7 +1645,7 @@ export default function DocumentsPage() {
             </div>
 
             {/* Missing Documents */}
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
+            <div ref={missingSectionRef} className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
               <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">Missing Documents</h3>
@@ -1508,13 +1670,13 @@ export default function DocumentsPage() {
                       // Show missing document types from Document Manager
                       Object.entries(documentTypes.categories).map(([category, types]) => 
                         types.filter(docType => !userDocuments.some(uploaded => uploaded.document_type === docType)).map(docType => (
-                          <div key={docType} className="flex items-start justify-between p-3 bg-red-50 rounded-lg border border-red-100">
-                            <div className="flex items-start space-x-3">
+                          <div key={docType} className="flex flex-col sm:flex-row items-start sm:items-start justify-start sm:justify-between p-3 bg-red-50 rounded-lg border border-red-100 space-y-2 sm:space-y-0">
+                            <div className="flex items-start space-x-3 w-full">
                               <div className="mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center border-red-400 bg-red-100">
                                 <X className="h-2.5 w-2.5 text-red-600" />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-center space-x-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <p className="text-sm font-medium text-gray-900">{getDocumentDisplayName(docType)}</p>
                                   <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium">{category}</span>
                                 </div>
@@ -1529,7 +1691,7 @@ export default function DocumentsPage() {
                                 setActiveTab('manager')
                                 setSelectedDocumentType(docType)
                               }}
-                              className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium flex-shrink-0 min-w-0"
+                              className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium w-full sm:w-auto mt-1 sm:mt-0 text-center"
                             >
                               Upload
                             </button>
@@ -1541,15 +1703,15 @@ export default function DocumentsPage() {
                       requiredDocuments
                         .filter(doc => !userDocuments.some(uploaded => getDocumentDisplayName(uploaded.document_type) === doc.name && uploaded.is_active))
                         .map((doc, index) => (
-                        <div key={index} className="flex items-start justify-between p-3 bg-red-50 rounded-lg border border-red-100">
-                          <div className="flex items-start space-x-3">
+                        <div key={index} className="flex flex-col sm:flex-row items-start sm:items-start justify-start sm:justify-between p-3 bg-red-50 rounded-lg border border-red-100 space-y-2 sm:space-y-0">
+                          <div className="flex items-start space-x-3 w-full">
                             <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                               doc.required ? 'border-red-400 bg-red-100' : 'border-gray-300'
                             }`}>
                               {doc.required && <X className="h-2.5 w-2.5 text-red-600" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center space-x-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <p className="text-sm font-medium text-gray-900">{doc.name}</p>
                                 {doc.required && (
                                   <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded font-medium">Required</span>
@@ -1572,7 +1734,7 @@ export default function DocumentsPage() {
                               }
                               setSelectedDocumentType(docTypeMapping[doc.name] || 'other')
                             }}
-                            className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium flex-shrink-0 min-w-0"
+                            className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium w-full sm:w-auto mt-1 sm:mt-0 text-center"
                           >
                             Upload
                           </button>
@@ -3245,26 +3407,53 @@ export default function DocumentsPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Target File Size</label>
-                        <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500">
+                        <select
+                          className="block w-full max-w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
+                          value={targetSizePreset}
+                          onChange={(e) => setTargetSizePreset(e.target.value as typeof targetSizePreset)}
+                        >
                           <option value="auto">Auto (Best compression)</option>
+                          <option value="50kb">Under 50 KB</option>
                           <option value="100kb">Under 100 KB</option>
                           <option value="500kb">Under 500 KB</option>
                           <option value="1mb">Under 1 MB</option>
                           <option value="2mb">Under 2 MB</option>
+                          <option value="custom">Custom…</option>
                         </select>
+                        {targetSizePreset === 'custom' && (
+                          <div className="mt-2 relative w-full sm:w-full min-w-0">
+                            <input
+                              type="number"
+                              min={10}
+                              max={10240}
+                              step={10}
+                              placeholder="Enter KB (10 - 10240)"
+                              className="block w-full sm:w-full max-w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 pr-10 focus:ring-2 focus:ring-teal-500"
+                              value={customTargetSizeKb}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') { setCustomTargetSizeKb(''); return; }
+                                const n = Number(val);
+                                if (!Number.isNaN(n)) setCustomTargetSizeKb(n);
+                              }}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">KB</span>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Quality Level</label>
                         <input
                           type="range"
-                          min="10"
-                          max="100"
-                          defaultValue="80"
+                          min={10}
+                          max={100}
+                          value={optimizationQuality}
+                          onChange={(e) => setOptimizationQuality(Number(e.target.value))}
                           className="w-full"
                         />
                         <div className="flex justify-between text-xs text-gray-500 mt-1">
                           <span>Smaller size</span>
-                          <span>Better quality</span>
+                          <span>Better quality ({optimizationQuality})</span>
                         </div>
                       </div>
                     </div>

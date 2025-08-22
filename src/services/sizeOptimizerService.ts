@@ -51,14 +51,18 @@ class SizeOptimizerService {
     compressionLevel: string = 'medium',
     quality: number = 85,
     maxWidth?: number,
-    maxHeight?: number
+    maxHeight?: number,
+    targetSizeKb?: number
   ): Promise<OptimizationResponse | BatchOptimizationResponse> {
     try {
       const formData = new FormData();
       files.forEach((file) => {
         formData.append('files', file);
       });
-      formData.append('compression_level', compressionLevel);
+      // Map UI levels to API levels
+      const levelMap: Record<string, string> = { low: 'light', medium: 'medium', high: 'aggressive' };
+      const apiLevel = levelMap[compressionLevel] || compressionLevel;
+      formData.append('compression_level', apiLevel);
       formData.append('quality', quality.toString());
       
       if (maxWidth) {
@@ -66,6 +70,9 @@ class SizeOptimizerService {
       }
       if (maxHeight) {
         formData.append('max_height', maxHeight.toString());
+      }
+      if (typeof targetSizeKb === 'number' && !Number.isNaN(targetSizeKb)) {
+        formData.append('target_size_kb', String(targetSizeKb));
       }
 
       const response = await fetch(`${apiClient.defaults.baseURL}/size-optimizer/optimize-images`, {

@@ -4,6 +4,7 @@
  */
 
 import { apiClient, API_ENDPOINTS } from '../config/api'
+import type { AxiosProgressEvent } from 'axios'
 
 // Types and Interfaces
 export interface UserDocument {
@@ -101,7 +102,12 @@ class DocumentManagerService {
   /**
    * Upload a user document
    */
-  async uploadDocument(file: File, documentType: string): Promise<DocumentUploadResponse> {
+  async uploadDocument(
+    file: File,
+    documentType: string,
+    onProgress?: (percent: number, loaded: number, total?: number) => void,
+    signal?: AbortSignal
+  ): Promise<DocumentUploadResponse> {
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -112,6 +118,21 @@ class DocumentManagerService {
           ...this.getAuthHeaders(),
           'Content-Type': 'multipart/form-data',
         },
+        // Report upload progress to caller
+        onUploadProgress: (e: AxiosProgressEvent) => {
+          if (onProgress) {
+            const total = (e.total ?? file.size) || file.size;
+            const loaded = e.loaded ?? 0;
+            const percent = typeof e.progress === 'number'
+              ? Math.round(e.progress * 100)
+              : total
+              ? Math.round((loaded * 100) / total)
+              : 0;
+            onProgress(percent, loaded, total);
+          }
+        },
+        // Allow caller to cancel
+        signal,
       });
 
       return response.data;
