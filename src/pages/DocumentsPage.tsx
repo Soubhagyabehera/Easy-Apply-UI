@@ -3325,7 +3325,11 @@ export default function DocumentsPage() {
                               <button 
                                 onClick={() => {
                                   if (file.downloadUrl) {
-                                    window.open(`http://localhost:8000/api/v1/${file.downloadUrl}`, '_blank');
+                                    // Extract the file ID from the download URL if it's a full path
+                                    const fileId = file.downloadUrl.includes('/') 
+                                      ? file.downloadUrl.split('/').pop() || file.downloadUrl 
+                                      : file.downloadUrl;
+                                    downloadFile(fileId, file.name || 'optimized-file', 'optimizer');
                                   }
                                 }}
                                 className="w-full sm:w-auto sm:ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
