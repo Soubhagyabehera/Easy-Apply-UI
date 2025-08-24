@@ -30,7 +30,14 @@ export const userService = {
 
   async getCurrentUser(): Promise<User> {
     const response = await apiClient.get(API_ENDPOINTS.users.me)
-    return response.data
+    const userData = response.data
+    
+    // Update stored user data to ensure name is available
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData))
+    }
+    
+    return userData
   },
 
   logout(): void {
@@ -98,4 +105,48 @@ export const userService = {
   async deleteDocument(userId: number, docId: number): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.users.document(userId, docId))
   },
+
+  // Profile statistics
+  async getProfileStats(): Promise<any> {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const response = await fetch(`http://localhost:8000/api/v1/users/me/stats`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch profile stats')
+    }
+
+    return response.json()
+  },
+
+  async updateProfile(profileData: any): Promise<any> {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const response = await fetch(`http://localhost:8000/api/v1/users/me/profile`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to update profile')
+    }
+
+    return response.json()
+  }
 }

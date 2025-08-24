@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase, ChevronDown, ChevronUp, Zap, Shield, Camera } from 'lucide-react'
+import { Search, MapPin, Building, Clock, Users, TrendingUp, ExternalLink, Calendar, Building2, FileText, X, Eye, Download, CheckCircle, AlertCircle, GraduationCap, Briefcase, ChevronDown, ChevronUp, Zap, Shield, Camera, Plus, Megaphone } from 'lucide-react'
 import { jobService } from '../services/jobService'
 import { Job, JobCategory } from '../types/job'
 import { useAuth } from '../contexts/AuthContext'
@@ -12,7 +12,12 @@ export default function Dashboard() {
     qualification: '',
     jobType: '',
     experience: '',
-    department: ''
+    department: '',
+    salary: '',
+    ageLimit: '',
+    applicationStatus: '',
+    applicationMode: '',
+    examDate: ''
   })
   const [sortBy, setSortBy] = useState<'deadline' | 'vacancy' | 'recent' | 'default'>('default')
   
@@ -27,6 +32,34 @@ export default function Dashboard() {
   const [showJobDetails, setShowJobDetails] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [jobStatus, setJobStatus] = useState<'active' | 'admit-card' | 'results' | 'all'>('active')
+  
+  // Post Job UI state
+  const [showPostJobModal, setShowPostJobModal] = useState(false)
+  const [postJobForm, setPostJobForm] = useState({
+    title: '',
+    company: '',
+    location: '',
+    apply_link: '',
+    posted_date: '',
+    vacancies: '',
+    fee: '',
+    pay_scale: '',
+    application_mode: '',
+    application_status: '',
+    application_deadline: '',
+    contract_or_permanent: '',
+    job_type: '',
+    official_notification_link: '',
+    official_website: '',
+    job_description: '',
+    required_documents: '', // comma-separated
+    selection_process: '', // comma-separated
+    education_qualification: '', // comma-separated
+    experience_required: ''
+  })
+  const [submittingJob, setSubmittingJob] = useState(false)
+  const [postJobError, setPostJobError] = useState<string | null>(null)
+  const [postJobSuccess, setPostJobSuccess] = useState<string | null>(null)
   
   // Lazy loading state
   const [displayedJobsCount, setDisplayedJobsCount] = useState(24)
@@ -106,6 +139,105 @@ export default function Dashboard() {
       console.error('Error fetching government jobs:', err)
     } finally {
       setLoading(false)
+    }
+  }
+  
+  // Helpers for manual job creation
+  const resetPostJobForm = () => {
+    setPostJobForm({
+      title: '',
+      company: '',
+      location: '',
+      apply_link: '',
+      posted_date: '',
+      vacancies: '',
+      fee: '',
+      pay_scale: '',
+      application_mode: '',
+      application_status: '',
+      application_deadline: '',
+      contract_or_permanent: '',
+      job_type: '',
+      official_notification_link: '',
+      official_website: '',
+      job_description: '',
+      required_documents: '', // comma-separated
+      selection_process: '', // comma-separated
+      education_qualification: '', // comma-separated
+      experience_required: ''
+    })
+    setPostJobError(null)
+    setPostJobSuccess(null)
+  }
+
+  const buildManualJobPayload = () => {
+    const trim = (s: string) => s?.trim()
+    const asNumber = (s: string) => {
+      const n = s.trim() === '' ? NaN : Number(s)
+      return Number.isFinite(n) ? n : undefined
+    }
+    const asArray = (s: string) => trim(s) ? trim(s)!.split(',').map(v => v.trim()).filter(Boolean) : undefined
+
+    const payload: any = {
+      title: trim(postJobForm.title),
+      company: trim(postJobForm.company)
+    }
+    if (trim(postJobForm.location)) payload.location = trim(postJobForm.location)
+    if (trim(postJobForm.apply_link)) payload.apply_link = trim(postJobForm.apply_link)
+    if (trim(postJobForm.posted_date)) payload.posted_date = trim(postJobForm.posted_date)
+    const vacancies = asNumber(postJobForm.vacancies)
+    if (vacancies !== undefined) payload.vacancies = vacancies
+    const fee = asNumber(postJobForm.fee)
+    if (fee !== undefined) payload.fee = fee
+    if (trim(postJobForm.pay_scale)) payload.pay_scale = trim(postJobForm.pay_scale)
+    if (trim(postJobForm.application_mode)) payload.application_mode = trim(postJobForm.application_mode)
+    if (trim(postJobForm.application_status)) payload.application_status = trim(postJobForm.application_status)
+    if (trim(postJobForm.application_deadline)) payload.application_deadline = trim(postJobForm.application_deadline)
+    if (trim(postJobForm.contract_or_permanent)) payload.contract_or_permanent = trim(postJobForm.contract_or_permanent)
+    if (trim(postJobForm.job_type)) payload.job_type = trim(postJobForm.job_type)
+    if (trim(postJobForm.official_notification_link)) payload.official_notification_link = trim(postJobForm.official_notification_link)
+    if (trim(postJobForm.official_website)) payload.official_website = trim(postJobForm.official_website)
+    if (trim(postJobForm.job_description)) payload.job_description = trim(postJobForm.job_description)
+    const reqDocs = asArray(postJobForm.required_documents)
+    if (reqDocs) payload.required_documents = reqDocs
+    const selProc = asArray(postJobForm.selection_process)
+    if (selProc) payload.selection_process = selProc
+    const edu = asArray(postJobForm.education_qualification)
+    const exp = trim(postJobForm.experience_required)
+    if ((edu && edu.length) || exp) {
+      payload.eligibility_criteria = {
+        ...(edu && edu.length ? { education_qualification: edu } : {}),
+        ...(exp ? { experience_required: exp } : {})
+      }
+    }
+    return payload
+  }
+
+  const handleSubmitJob = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPostJobError(null)
+    setPostJobSuccess(null)
+
+    if (!postJobForm.title.trim() || !postJobForm.company.trim()) {
+      setPostJobError('Please fill in the required fields: Title and Organization/Department.')
+      return
+    }
+    try {
+      setSubmittingJob(true)
+      const payload = buildManualJobPayload()
+      await jobService.createJob(payload as any)
+      setPostJobSuccess('Job posted successfully!')
+      // Refresh jobs and close modal shortly
+      fetchGovernmentJobs()
+      setTimeout(() => {
+        setShowPostJobModal(false)
+        resetPostJobForm()
+      }, 600)
+    } catch (err: any) {
+      console.error('Failed to post job', err)
+      setPostJobError(err?.message || 'Failed to create job. Please try again.')
+    } finally {
+      setSubmittingJob(false)
     }
   }
   
@@ -273,12 +405,12 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-700 border-b border-blue-100 dark:border-gray-600 transition-colors">
-        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-          {/* Search Bar */}
-          <div className="mb-3 sm:mb-4">
-            <div className="relative max-w-3xl mx-auto">
+      {/* Compact Hero Section */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-[#0B1220] dark:via-[#0D1526] dark:to-[#101827] border-b border-blue-100 dark:border-gray-700/60 transition-colors dark:ring-1 dark:ring-white/5 dark:shadow-inner">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
+          {/* Compact Search Bar */}
+          <div className="mb-2 sm:mb-3">
+            <div className="relative w-full sm:max-w-[932px] mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -287,7 +419,7 @@ export default function Dashboard() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => searchTerm.trim().length > 2 && setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="w-full pl-10 pr-4 py-2 text-sm border-2 border-white dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white shadow-md hover:shadow-lg transition-all"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-white/80 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/95 dark:bg-gray-800 dark:text-white shadow-sm hover:shadow-md transition-all"
               />
               
               {/* Search Suggestions Dropdown */}
@@ -308,7 +440,16 @@ export default function Dashboard() {
                             {(job.application_deadline || job.last_date) && (
                               <>
                                 <span>•</span>
-                                <span>Apply by: {new Date(job.application_deadline || job.last_date).toLocaleDateString()}</span>
+                                <span>
+                                  Apply by: {(() => {
+                                    try {
+                                      const d = new Date(job.application_deadline || job.last_date || '')
+                                      return isNaN(d.getTime()) ? 'TBA' : d.toLocaleDateString()
+                                    } catch {
+                                      return 'TBA'
+                                    }
+                                  })()}
+                                </span>
                               </>
                             )}
                           </div>
@@ -322,30 +463,16 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Compact Mobile-First Action Buttons */}
+          {/* Compact Action Buttons */}
           <div className="w-full">
-            {/* Mobile: Ultra-Compact Stacked Layout */}
+            {/* Mobile: Compact Grid Layout */}
             <div className="block sm:hidden">
-              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-white/60 dark:border-gray-600/60">
-                {/* Primary Find Jobs Button */}
-                <button 
-                  onClick={() => {
-                    const jobsSection = document.getElementById('jobs-section');
-                    if (jobsSection) {
-                      jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                  }}
-                  className="w-full mb-1.5 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm active:scale-98 transition-transform"
-                >
-                  <Search className="h-4 w-4" />
-                  <span>Find Jobs</span>
-                </button>
-                
-                {/* Secondary Action Row */}
-                <div className="grid grid-cols-3 gap-1">
+              <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg p-2 shadow-sm border border-white/70 dark:border-gray-600/70">
+                {/* Four Action Grid - More Compact */}
+                <div className="grid grid-cols-2 gap-1.5">
                   <Link 
                     to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
-                    className="rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    className="rounded-md px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
                     style={{backgroundColor: '#16A34A'}}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803D'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16A34A'}
@@ -356,7 +483,7 @@ export default function Dashboard() {
                   
                   <Link 
                     to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
-                    className="rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    className="rounded-md px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
                     style={{backgroundColor: '#9333EA'}}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7C3AED'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#9333EA'}
@@ -367,32 +494,38 @@ export default function Dashboard() {
                   
                   <Link 
                     to={isAuthenticated ? '/auto-apply' : '/signin'}
-                    className="bg-orange-500 hover:bg-orange-600 rounded-lg px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    className="bg-orange-500 hover:bg-orange-600 rounded-md px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
                   >
                     <Zap className="h-3.5 w-3.5 text-white" />
                     <span className="text-xs font-medium text-white">Auto Apply</span>
                   </Link>
+                  
+                  {isAuthenticated ? (
+                    <button 
+                      onClick={() => setShowPostJobModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 rounded-md px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    >
+                      <Megaphone className="h-3.5 w-3.5 text-white" />
+                      <span className="text-xs font-medium text-white">Post Job</span>
+                    </button>
+                  ) : (
+                    <Link 
+                      to="/signin"
+                      className="bg-blue-600 hover:bg-blue-700 rounded-md px-1.5 py-1.5 flex flex-col items-center space-y-0.5 transition-colors active:scale-95"
+                    >
+                      <Megaphone className="h-3.5 w-3.5 text-white" />
+                      <span className="text-xs font-medium text-white">Post Job</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Desktop: Traditional Layout */}
-            <div className="hidden sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-3">
-              <button 
-                onClick={() => {
-                  const jobsSection = document.getElementById('jobs-section');
-                  if (jobsSection) {
-                    jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }}
-                className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-              >
-                <Search className="h-4 w-4" />
-                <span>Find Government Jobs</span>
-              </button>
+            {/* Desktop: Original Layout */}
+            <div className="hidden sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-3 sm:max-w-[932px] sm:mx-auto w-full">
               <Link 
                 to={isAuthenticated ? "/documents?tab=tools" : "/documents?tab=tools"}
-                className="px-4 py-3 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                className="px-4 py-3 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 sm:w-56"
                 style={{backgroundColor: '#16A34A'}}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803D'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16A34A'}
@@ -402,7 +535,7 @@ export default function Dashboard() {
               </Link>
               <Link 
                 to={isAuthenticated ? '/documents?tab=manager' : '/signin'}
-                className="px-4 py-3 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                className="px-4 py-3 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2 sm:w-56"
                 style={{backgroundColor: '#9333EA'}}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7C3AED'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#9333EA'}
@@ -412,11 +545,28 @@ export default function Dashboard() {
               </Link>
               <Link 
                 to={isAuthenticated ? '/auto-apply' : '/signin'}
-                className="px-4 py-3 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2"
+                className="px-4 py-3 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center space-x-2 sm:w-56"
               >
                 <Zap className="h-4 w-4" />
                 <span>One-Click Auto Apply</span>
               </Link>
+              {isAuthenticated ? (
+                <button 
+                  onClick={() => setShowPostJobModal(true)}
+                  className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 sm:w-56"
+                >
+                  <Megaphone className="h-4 w-4" />
+                  <span>Post a Govt Job</span>
+                </button>
+              ) : (
+                <Link 
+                  to="/signin"
+                  className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 sm:w-56"
+                >
+                  <Megaphone className="h-4 w-4" />
+                  <span>Post a Govt Job</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -1009,7 +1159,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   filteredAndSortedJobs.slice(0, displayedJobsCount).map((job) => (
-                    <div key={job.id} className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 group">
+                    <div key={job.job_id} className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 group">
                     {/* Compact Header with Title & Organization */}
                     <div className="flex items-start justify-between mb-1.5">
                       <div className="flex-1 min-w-0 pr-2">
@@ -1155,7 +1305,7 @@ export default function Dashboard() {
                       </button>
                       <a
                         href={(() => {
-                          const link = job.apply_link || job.apply_url || job.career_url || '#';
+                          const link = job.apply_link || job.official_website || '#';
                           if (link === '#') return link;
                           return link.startsWith('http://') || link.startsWith('https://') ? link : `https://${link}`;
                         })()}
@@ -1287,7 +1437,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Job Description</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  {selectedJob.job_description || selectedJob.description || 'This is a government job opportunity with competitive benefits, job security, and excellent career growth prospects. The position offers a chance to serve the nation while building a rewarding career in the public sector.'}
+                  {selectedJob.job_description || 'This is a government job opportunity with competitive benefits, job security, and excellent career growth prospects. The position offers a chance to serve the nation while building a rewarding career in the public sector.'}
                 </p>
               </div>
 
@@ -1388,23 +1538,404 @@ export default function Dashboard() {
                   >
                     Close
                   </button>
-                  {selectedJob.apply_url && (
-                    <a
-                      href={selectedJob.apply_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-green-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium text-sm"
-                    >
-                      <ExternalLink className="h-3 w-3 md:h-4 md:w-4" />
-                      <span>Apply Now</span>
-                    </a>
-                  )}
+                  {(() => {
+                    const link = selectedJob.apply_link || selectedJob.official_website
+                    if (!link) return null
+                    const href = link.startsWith('http://') || link.startsWith('https://') ? link : `https://${link}`
+                    return (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-green-600 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 font-medium text-sm"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        <span>Apply Now</span>
+                      </a>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
+    {isAuthenticated && (
+      <>
+
+      {/* Post Govt Job Modal */}
+      {showPostJobModal && (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="post-job-title">
+        {/* Overlay */}
+        <div
+          className="absolute inset-0 bg-black/40"
+          onClick={() => {
+            setShowPostJobModal(false)
+            resetPostJobForm()
+          }}
+        />
+        {/* Modern Modal Card */}
+        <div className="relative w-full max-w-[95vw] sm:max-w-3xl bg-white dark:bg-gray-800 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden mx-2 sm:mx-0">
+          {/* Header with gradient */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-xl">
+                  <Plus className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 id="post-job-title" className="text-lg font-bold text-white">Post a Government Job</h3>
+                  <p className="text-blue-100 text-sm">Share opportunities with the community</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPostJobModal(false)
+                  resetPostJobForm()
+                }}
+                className="p-2 rounded-xl hover:bg-white/20 transition-colors"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5 text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="p-1 bg-blue-600 rounded-lg">
+                  <FileText className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">Quick Guidelines</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-200">
+                    Fields marked with <span className="text-red-600 font-semibold">*</span> are required. Fill only what you know — optional fields can be skipped.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {postJobError && (
+              <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-start space-x-3">
+                <div className="p-1 bg-red-600 rounded-lg flex-shrink-0">
+                  <AlertCircle className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-red-900 dark:text-red-100 mb-1">Error</p>
+                  <p className="text-sm text-red-700 dark:text-red-200">{postJobError}</p>
+                </div>
+              </div>
+            )}
+            {postJobSuccess && (
+              <div className="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-start space-x-3">
+                <div className="p-1 bg-green-600 rounded-lg flex-shrink-0">
+                  <CheckCircle className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">Success</p>
+                  <p className="text-sm text-green-700 dark:text-green-200">{postJobSuccess}</p>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitJob} className="space-y-6">
+              {/* Essential Information Section */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="p-1.5 bg-blue-600 rounded-lg">
+                    <Briefcase className="h-4 w-4 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Essential Information</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                      Job Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={postJobForm.title}
+                      onChange={(e) => setPostJobForm({ ...postJobForm, title: e.target.value })}
+                      placeholder="Assistant Section Officer"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                      Organization/Department <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={postJobForm.company}
+                      onChange={(e) => setPostJobForm({ ...postJobForm, company: e.target.value })}
+                      placeholder="Ministry of External Affairs"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+            {/* Optional core */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={postJobForm.location}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, location: e.target.value })}
+                  placeholder="New Delhi"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Apply Link</label>
+                <input
+                  type="url"
+                  value={postJobForm.apply_link}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, apply_link: e.target.value })}
+                  placeholder="https://example.gov.in/apply"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Application Deadline</label>
+                <input
+                  type="date"
+                  value={postJobForm.application_deadline}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, application_deadline: e.target.value })}
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Posted Date</label>
+                <input
+                  type="date"
+                  value={postJobForm.posted_date}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, posted_date: e.target.value })}
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+            </div>
+
+            {/* Enums */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Job Type</label>
+                <select
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                  value={postJobForm.job_type}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, job_type: e.target.value })}
+                >
+                  <option value="">Select</option>
+                  <option value="central">Central</option>
+                  <option value="state">State</option>
+                  <option value="psu">PSU</option>
+                  <option value="autonomous">Autonomous</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Employment Type</label>
+                <select
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                  value={postJobForm.contract_or_permanent}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, contract_or_permanent: e.target.value })}
+                >
+                  <option value="">Select</option>
+                  <option value="permanent">Permanent</option>
+                  <option value="contract">Contract</option>
+                  <option value="internship">Internship</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Application Mode</label>
+                <select
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                  value={postJobForm.application_mode}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, application_mode: e.target.value })}
+                >
+                  <option value="">Select</option>
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                  <option value="walk-in">Walk-in</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Application Status</label>
+                <select
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                  value={postJobForm.application_status}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, application_status: e.target.value })}
+                >
+                  <option value="">Select</option>
+                  <option value="open">Open</option>
+                  <option value="closed">Closed</option>
+                  <option value="admit card">Admit Card</option>
+                  <option value="result">Result</option>
+                  <option value="upcoming">Upcoming</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Numbers */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Vacancies</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={postJobForm.vacancies}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, vacancies: e.target.value })}
+                  placeholder="50"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Application Fee (₹)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={postJobForm.fee}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, fee: e.target.value })}
+                  placeholder="500"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+            </div>
+
+            {/* Text areas */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Pay Scale</label>
+              <input
+                type="text"
+                value={postJobForm.pay_scale}
+                onChange={(e) => setPostJobForm({ ...postJobForm, pay_scale: e.target.value })}
+                placeholder="Level 4 (Rs. 25500-81100)"
+                className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Job Description</label>
+              <textarea
+                value={postJobForm.job_description}
+                onChange={(e) => setPostJobForm({ ...postJobForm, job_description: e.target.value })}
+                rows={3}
+                placeholder="Brief description of the role, responsibilities, etc."
+                className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Required Documents (comma-separated)</label>
+                <input
+                  type="text"
+                  value={postJobForm.required_documents}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, required_documents: e.target.value })}
+                  placeholder="10th Certificate, 12th Certificate, Graduation"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Selection Process (comma-separated)</label>
+                <input
+                  type="text"
+                  value={postJobForm.selection_process}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, selection_process: e.target.value })}
+                  placeholder="CBT Tier-I, CBT Tier-II, Documents"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Education Qualifications (comma-separated)</label>
+                <input
+                  type="text"
+                  value={postJobForm.education_qualification}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, education_qualification: e.target.value })}
+                  placeholder="12th Pass, Graduate"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Experience Required</label>
+                <input
+                  type="text"
+                  value={postJobForm.experience_required}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, experience_required: e.target.value })}
+                  placeholder="0-2 years / Freshers can apply"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+            </div>
+
+            {/* Links */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Official Notification Link</label>
+                <input
+                  type="url"
+                  value={postJobForm.official_notification_link}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, official_notification_link: e.target.value })}
+                  placeholder="https://example.gov.in/notification.pdf"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Official Website</label>
+                <input
+                  type="url"
+                  value={postJobForm.official_website}
+                  onChange={(e) => setPostJobForm({ ...postJobForm, official_website: e.target.value })}
+                  placeholder="https://example.gov.in"
+                  className="w-full px-3 py-2 border rounded text-sm bg-white dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                />
+              </div>
+            </div>
+
+              <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPostJobModal(false)
+                    resetPostJobForm()
+                  }}
+                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingJob}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl text-sm font-medium hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center space-x-2"
+                >
+                  {submittingJob ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Posting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      <span>Post Job</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      )}
+      </>
+    )}
     </div>
   )
 }

@@ -9,8 +9,10 @@ export interface ConversionResponse {
   success: boolean;
   conversion_id?: string;
   conversion_type?: string;
-  original_filename?: string;
-  processed_filename?: string;
+  original_filename?: string; // legacy
+  processed_filename?: string; // legacy
+  input_filename?: string;
+  output_filename?: string;
   input_format?: string;
   output_format?: string;
   total_pages?: number;

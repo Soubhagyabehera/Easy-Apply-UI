@@ -118,6 +118,7 @@ class DocumentManagerService {
           ...this.getAuthHeaders(),
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 300000, // 5 minutes - override default timeout for uploads
         // Report upload progress to caller
         onUploadProgress: (e: AxiosProgressEvent) => {
           if (onProgress) {
@@ -310,12 +311,12 @@ class DocumentManagerService {
    * Validate file before upload
    */
   validateFile(file: File, documentType: string): { valid: boolean; error?: string } {
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = 100 * 1024 * 1024; // 100MB
     const supportedFormats = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
 
     // Check file size
     if (file.size > maxSize) {
-      return { valid: false, error: 'File size exceeds 50MB limit' };
+      return { valid: false, error: 'File size exceeds 100MB limit' };
     }
 
     // Check file format

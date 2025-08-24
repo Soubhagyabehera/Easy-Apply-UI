@@ -61,7 +61,7 @@ const SignInPage: React.FC = () => {
         credential: 'demo_credential_token',
         sub: 'demo_user_123',
         email: 'demo@applyze.com',
-        name: 'Demo User',
+        name: 'John Doe',
         picture: '',
       }
 

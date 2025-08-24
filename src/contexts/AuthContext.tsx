@@ -29,10 +29,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const isAuth = userService.isAuthenticated()
 
         if (isAuth && storedUser) {
-          // Verify token is still valid by making a request
+          // Set user from stored data immediately
+          setUser(storedUser)
+          
+          // Then refresh from API
           try {
             const currentUser = await userService.getCurrentUser()
-            setUser(currentUser)
+            if (currentUser?.name) {
+              setUser(currentUser)
+              localStorage.setItem('user', JSON.stringify(currentUser))
+            }
           } catch (error) {
             // Token is invalid, clear storage
             userService.logout()
@@ -51,10 +57,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth()
   }, [])
 
-  const login = (userData: User, token: string) => {
+  const login = async (userData: User, token: string) => {
     localStorage.setItem('access_token', token)
+    // Store initial user data
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
+
+    // Fetch fresh user data to ensure we have the full profile
+    try {
+      const currentUser = await userService.getCurrentUser()
+      if (currentUser?.full_name) {
+        setUser(currentUser)
+        localStorage.setItem('user', JSON.stringify(currentUser))
+      }
+    } catch (error) {
+      console.error('Error fetching user details:', error)
+    }
   }
 
   const logout = () => {

@@ -81,6 +81,13 @@ export default function DocumentsPage() {
   }, [location.search])
   const [activeToolModal, setActiveToolModal] = useState<string | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])  
+  // Previews for uploaded files (image thumbnails)
+  const [filePreviews, setFilePreviews] = useState<string[]>([])
+  useEffect(() => {
+    const urls = uploadedFiles.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : '')
+    setFilePreviews(urls)
+    return () => { urls.forEach(u => { if (u) URL.revokeObjectURL(u) }) }
+  }, [uploadedFiles])
   const [processedFiles, setProcessedFiles] = useState<any[]>([])  
   const [isProcessing, setIsProcessing] = useState(false)  
   const [showCamera, setShowCamera] = useState(false)
@@ -92,6 +99,14 @@ export default function DocumentsPage() {
   const [imageHeight, setImageHeight] = useState<number>(200)
   const [maintainAspectRatio, setMaintainAspectRatio] = useState<boolean>(true)
   const [maxFileSizeKb, setMaxFileSizeKb] = useState<number>(500)
+  // Ref to capture Enter key globally in the modal
+  const formatConverterRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (activeToolModal === 'format-converter') {
+      // Focus container to receive key events
+      setTimeout(() => formatConverterRef.current?.focus(), 0)
+    }
+  }, [activeToolModal])
   
   // Additional state for other document tools
   const [pdfOperation, setPdfOperation] = useState<'merge' | 'split' | 'compress' | 'combine_documents' | 'pdf_to_images' | 'combine_pdfs'>('merge')
@@ -120,6 +135,35 @@ export default function DocumentsPage() {
   const [isFormattingForJob, setIsFormattingForJob] = useState(false)
   const [realDocumentStats, setRealDocumentStats] = useState<any>(null)
   const [showAllUploadedDocs, setShowAllUploadedDocs] = useState(false)
+
+  // Map uploaded file types to conversion option keys and compute disabled options
+  const getFormatForFile = (file: File): 'JPG' | 'PNG' | 'PDF' | 'DOCX' | null => {
+    const type = (file.type || '').toLowerCase()
+    const name = (file.name || '').toLowerCase()
+    if (type === 'image/jpeg' || type === 'image/jpg' || type === 'image/pjpeg' || name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'JPG'
+    if (type === 'image/png' || name.endsWith('.png')) return 'PNG'
+    if (type === 'application/pdf' || name.endsWith('.pdf')) return 'PDF'
+    if (type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || name.endsWith('.docx')) return 'DOCX'
+    return null
+  }
+
+  const disabledConversionFormats = (() => {
+    const s = new Set<'JPG' | 'PNG' | 'PDF' | 'DOCX'>()
+    uploadedFiles.forEach(f => {
+      const fmt = getFormatForFile(f)
+      if (fmt) s.add(fmt)
+    })
+    return s
+  })()
+
+  // If current selection becomes disabled due to new uploads, auto-switch to a valid option
+  useEffect(() => {
+    if (disabledConversionFormats.has(conversionFormat)) {
+      const order: Array<'JPG' | 'PNG' | 'PDF' | 'DOCX'> = ['PDF', 'JPG', 'PNG', 'DOCX']
+      const next = order.find(o => !disabledConversionFormats.has(o))
+      if (next) setConversionFormat(next)
+    }
+  }, [uploadedFiles, conversionFormat])
 
   // Upload progress state
   const [isUploading, setIsUploading] = useState(false)
@@ -2385,61 +2429,121 @@ export default function DocumentsPage() {
 
               {/* Format Converter Tool */}
               {activeToolModal === 'format-converter' && (
-                <div className="space-y-6">
-                  {/* Upload Area */}
-                  <div className="border-2 border-dashed border-red-300 rounded-xl p-8 text-center bg-red-50">
-                    <RotateCw className="h-12 w-12 text-red-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Files to Convert</h3>
-                    <p className="text-gray-600 mb-4">Drag and drop your files here, or click to browse</p>
-                    <input
-                      type="file"
-                      multiple
-                      className="hidden"
-                      id="convert-upload"
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setUploadedFiles(Array.from(e.target.files))
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="convert-upload"
-                      className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose Files
-                    </label>
-                    <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, PDF, DOCX, TXT</p>
-                  </div>
-
-                  {/* Uploaded Files Display */}
-                  {uploadedFiles.length > 0 && (
-                    <div className="bg-white rounded-xl p-4 border border-red-200">
-                      <h4 className="font-semibold text-gray-900 mb-3">Selected Files ({uploadedFiles.length})</h4>
-                      <div className="space-y-2">
-                        {uploadedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <FileText className="h-5 w-5 text-red-600" />
-                              <div>
-                                <p className="font-medium text-gray-900">{file.name}</p>
-                                <p className="text-sm text-gray-500">{Math.round(file.size / 1024)} KB</p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => {
-                                const newFiles = uploadedFiles.filter((_, i) => i !== index);
-                                setUploadedFiles(newFiles);
-                              }}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
+                <div
+                  className="space-y-6"
+                  ref={formatConverterRef}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const tag = (e.target as HTMLElement).tagName?.toLowerCase()
+                      if (tag !== 'input' && tag !== 'textarea' && !isProcessing && uploadedFiles.length > 0) {
+                        e.preventDefault()
+                        processFormatConversion()
+                      }
+                    }
+                  }}
+                  tabIndex={0}
+                >
+                  {/* Upload Area with Inline Grid Preview */}
+                  <div className="border-2 border-dashed border-red-300 rounded-xl p-4 sm:p-6 bg-red-50">
+                    {uploadedFiles.length === 0 ? (
+                      <div className="text-center">
+                        <RotateCw className="h-12 w-12 text-red-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Files to Convert</h3>
+                        <p className="text-gray-600 mb-4">Drag and drop your files here, or click to browse</p>
+                        <input
+                          type="file"
+                          multiple
+                          className="hidden"
+                          id="convert-upload"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              const incoming = Array.from(e.target.files)
+                              setUploadedFiles(prev => {
+                                const map = new Map<string, File>()
+                                const add = (f: File) => map.set(`${f.name}-${f.size}-${(f as any).lastModified ?? ''}`, f)
+                                prev.forEach(add); incoming.forEach(add)
+                                return Array.from(map.values())
+                              })
+                              // Reset value so selecting the same file again still triggers change
+                              e.currentTarget.value = ''
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="convert-upload"
+                          className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Choose Files
+                        </label>
+                        <p className="text-xs text-gray-500 mt-2">Supported: JPG, PNG, PDF, DOCX, TXT</p>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-gray-900">Selected Files ({uploadedFiles.length})</h4>
+                          <button
+                            onClick={() => setUploadedFiles([])}
+                            className="text-sm text-red-600 hover:text-red-700"
+                          >
+                            Clear All
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {uploadedFiles.map((file, index) => (
+                            <div key={index} className="relative bg-white rounded-lg border border-red-200 p-2 flex items-center space-x-2">
+                              <div className="h-12 w-12 flex-shrink-0 rounded overflow-hidden bg-red-100 flex items-center justify-center">
+                                {file.type.startsWith('image/') && filePreviews[index] ? (
+                                  <img src={filePreviews[index]} alt={file.name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <FileText className="h-6 w-6 text-red-600" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-gray-900 truncate" title={file.name}>{file.name}</p>
+                                <p className="text-xs text-gray-600">{Math.max(1, Math.round(file.size / 1024))} KB</p>
+                              </div>
+                              <button
+                                onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                                className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                aria-label={`Remove ${file.name}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                          {/* Add More tile */}
+                          <label
+                            htmlFor="convert-upload"
+                            className="border-2 border-dashed border-red-300 rounded-lg p-2 flex flex-col items-center justify-center text-red-700 hover:bg-red-100 cursor-pointer"
+                          >
+                            <Plus className="h-5 w-5 mb-1" />
+                            <span className="text-xs font-medium">Add more</span>
+                          </label>
+                        </div>
+                        {/* Hidden input kept outside tiles so both initial button and tile work */}
+                        <input
+                          type="file"
+                          multiple
+                          className="hidden"
+                          id="convert-upload"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              const incoming = Array.from(e.target.files)
+                              setUploadedFiles(prev => {
+                                const map = new Map<string, File>()
+                                const add = (f: File) => map.set(`${f.name}-${f.size}-${(f as any).lastModified ?? ''}`, f)
+                                prev.forEach(add); incoming.forEach(add)
+                                return Array.from(map.values())
+                              })
+                              e.currentTarget.value = ''
+                            }
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 mt-2">Press Enter to convert</p>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Conversion Options */}
                   <div className="bg-gray-50 rounded-xl p-4">
@@ -2447,10 +2551,14 @@ export default function DocumentsPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <button 
                         onClick={() => setConversionFormat('JPG')}
+                        disabled={disabledConversionFormats.has('JPG')}
+                        title={disabledConversionFormats.has('JPG') ? 'Already uploaded file(s) are JPG' : undefined}
                         className={`p-3 border rounded-lg text-center transition-colors ${
-                          conversionFormat === 'JPG' 
-                            ? 'border-red-500 bg-red-50 text-red-700' 
-                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                          disabledConversionFormats.has('JPG')
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                            : (conversionFormat === 'JPG' 
+                              ? 'border-red-500 bg-red-50 text-red-700' 
+                              : 'border-gray-300 hover:border-red-500 hover:bg-red-50')
                         }`}
                       >
                         <FileImage className="h-6 w-6 mx-auto mb-1 text-red-600" />
@@ -2458,10 +2566,14 @@ export default function DocumentsPage() {
                       </button>
                       <button 
                         onClick={() => setConversionFormat('PNG')}
+                        disabled={disabledConversionFormats.has('PNG')}
+                        title={disabledConversionFormats.has('PNG') ? 'Already uploaded file(s) are PNG' : undefined}
                         className={`p-3 border rounded-lg text-center transition-colors ${
-                          conversionFormat === 'PNG' 
-                            ? 'border-red-500 bg-red-50 text-red-700' 
-                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                          disabledConversionFormats.has('PNG')
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                            : (conversionFormat === 'PNG' 
+                              ? 'border-red-500 bg-red-50 text-red-700' 
+                              : 'border-gray-300 hover:border-red-500 hover:bg-red-50')
                         }`}
                       >
                         <Image className="h-6 w-6 mx-auto mb-1 text-red-600" />
@@ -2469,10 +2581,14 @@ export default function DocumentsPage() {
                       </button>
                       <button 
                         onClick={() => setConversionFormat('PDF')}
+                        disabled={disabledConversionFormats.has('PDF')}
+                        title={disabledConversionFormats.has('PDF') ? 'Already uploaded file(s) are PDF' : undefined}
                         className={`p-3 border rounded-lg text-center transition-colors ${
-                          conversionFormat === 'PDF' 
-                            ? 'border-red-500 bg-red-50 text-red-700' 
-                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                          disabledConversionFormats.has('PDF')
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                            : (conversionFormat === 'PDF' 
+                              ? 'border-red-500 bg-red-50 text-red-700' 
+                              : 'border-gray-300 hover:border-red-500 hover:bg-red-50')
                         }`}
                       >
                         <FileText className="h-6 w-6 mx-auto mb-1 text-red-600" />
@@ -2480,10 +2596,14 @@ export default function DocumentsPage() {
                       </button>
                       <button 
                         onClick={() => setConversionFormat('DOCX')}
+                        disabled={disabledConversionFormats.has('DOCX')}
+                        title={disabledConversionFormats.has('DOCX') ? 'Already uploaded file(s) are DOCX' : undefined}
                         className={`p-3 border rounded-lg text-center transition-colors ${
-                          conversionFormat === 'DOCX' 
-                            ? 'border-red-500 bg-red-50 text-red-700' 
-                            : 'border-gray-300 hover:border-red-500 hover:bg-red-50'
+                          disabledConversionFormats.has('DOCX')
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                            : (conversionFormat === 'DOCX' 
+                              ? 'border-red-500 bg-red-50 text-red-700' 
+                              : 'border-gray-300 hover:border-red-500 hover:bg-red-50')
                         }`}
                       >
                         <File className="h-6 w-6 mx-auto mb-1 text-red-600" />

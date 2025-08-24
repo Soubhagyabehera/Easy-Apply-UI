@@ -24,7 +24,7 @@ export interface Job {
   job_id: string
   title: string
   company: string
-  location: string
+  location?: string
   apply_link?: string
   posted_date?: string
   
@@ -39,15 +39,15 @@ export interface Job {
   selection_process?: string[]
   pay_scale?: string
   application_mode?: 'online' | 'offline' | 'walk-in'
-  application_status?: 'open' | 'closed' | 'upcoming'
+  application_status?: 'open' | 'closed' | 'admit card' | 'result' | 'upcoming'
   exam_date?: string
   admit_card_release_date?: string
   result_date?: string
   official_notification_link?: string
   official_website?: string
   application_deadline?: string
-  contract_or_permanent?: 'contract' | 'permanent'
-  job_type?: 'central' | 'state' | 'psu'
+  contract_or_permanent?: 'contract' | 'permanent' | 'internship'
+  job_type?: 'central' | 'state' | 'psu' | 'autonomous'
   source?: string
   created_at?: string
   updated_at?: string

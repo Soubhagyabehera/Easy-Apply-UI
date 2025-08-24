@@ -24,7 +24,7 @@ const getApiBaseUrl = (): string => {
 
 export const apiConfig: ApiConfig = {
   baseURL: getApiBaseUrl(),
-  timeout: 30000, // 30 seconds
+  timeout: 300000, // 5 minutes
   headers: {
     'Content-Type': 'application/json',
   },

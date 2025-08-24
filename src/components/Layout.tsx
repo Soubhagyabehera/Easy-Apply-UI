@@ -109,7 +109,7 @@ export default function Layout({ children }: LayoutProps) {
                     {user?.picture ? (
                       <img
                         src={user.picture}
-                        alt={user.full_name || 'User'}
+                        alt={user.name || 'User'}
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-blue-200"
                         onError={(e) => {
                           // Fallback to default avatar if image fails to load
@@ -122,7 +122,7 @@ export default function Layout({ children }: LayoutProps) {
                     <div className={`w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center ${user?.picture ? 'hidden' : ''}`}>
                       <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
-                    <span className="hidden lg:block text-sm font-medium">{user?.full_name || 'User'}</span>
+                    <span className="hidden lg:block text-sm font-medium">{user?.name?.split(' ')[0] || 'User'}</span>
                     <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
 
