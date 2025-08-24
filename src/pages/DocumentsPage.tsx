@@ -16,6 +16,7 @@ import { documentScannerService } from '../services/documentScannerService'
 import { formatConverterService } from '../services/formatConverterService'
 import { sizeOptimizerService } from '../services/sizeOptimizerService'
 import { documentManagerService, UserDocument, DocumentTypesResponse } from '../services/documentManagerService'
+import { API_BASE_URL } from '../config/api'
 
 interface Document {
   id: number
@@ -2367,7 +2368,7 @@ export default function DocumentsPage() {
                                 onClick={async () => {
                                   try {
                                     // Fetch the processed image for preview from backend server
-                                    const backendUrl = `http://localhost:8000/api/v1${file.downloadUrl}`;
+                                    const backendUrl = `${API_BASE_URL}${file.downloadUrl}`;
                                     const response = await fetch(backendUrl);
                                     if (response.ok) {
                                       const blob = await response.blob();

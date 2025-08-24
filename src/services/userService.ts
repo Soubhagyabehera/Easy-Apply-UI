@@ -108,45 +108,12 @@ export const userService = {
 
   // Profile statistics
   async getProfileStats(): Promise<any> {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      throw new Error('No authentication token found')
-    }
-
-    const response = await fetch(`http://localhost:8000/api/v1/users/me/stats`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch profile stats')
-    }
-
-    return response.json()
+    const response = await apiClient.get('/users/me/stats')
+    return response.data
   },
 
   async updateProfile(profileData: any): Promise<any> {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      throw new Error('No authentication token found')
-    }
-
-    const response = await fetch(`http://localhost:8000/api/v1/users/me/profile`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(profileData),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to update profile')
-    }
-
-    return response.json()
+    const response = await apiClient.put('/users/me/profile', profileData)
+    return response.data
   }
 }
